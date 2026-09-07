@@ -9,60 +9,80 @@ import { BcryptService } from './bcrypt.service';
 
 @Injectable()
 export class UsersService {
-    constructor(
-        @InjectModel(User.name)
-        private readonly UserModel: UserModelType,
-        private readonly usersRepository: UsersRepository,
-        private readonly bcryptService: BcryptService,
-    ) {}
+   constructor(
+      @InjectModel(User.name)
+      private readonly UserModel: UserModelType,
+      private readonly usersRepository: UsersRepository,
+      private readonly bcryptService: BcryptService,
+   ) {}
 
-    async createUser(
-        dto: CreateUserInputDto,
-    ): Promise<Result<string>> {
-        const userByLogin = await this.usersRepository.findByLogin(dto.login);
+   async createUser(dto: CreateUserInputDto): Promise<Result<string>> {
+      const userByLogin = await this.usersRepository.findByLogin(dto.login);
 
-        if (userByLogin) {
-            return {
-                status: ResultStatus.BadRequest,
-                extensions: [
-                    {
-                        field: 'login',
-                        message: 'login should be unique',
-                    },
-                ],
-                data: null,
-            };
-        }
+      if (userByLogin) {
+         return {
+            status: ResultStatus.BadRequest,
+            extensions: [
+               {
+                  field: 'login',
+                  message: 'login should be unique',
+               },
+            ],
+            data: null,
+         };
+      }
 
-        const userByEmail = await this.usersRepository.findByEmail(dto.email);
+      const userByEmail = await this.usersRepository.findByEmail(dto.email);
 
-        if (userByEmail) {
-            return {
-                status: ResultStatus.BadRequest,
-                extensions: [
-                    {
-                        field: 'email',
-                        message: 'email should be unique',
-                    },
-                ],
-                data: null,
-            };
-        }
+      if (userByEmail) {
+         return {
+            status: ResultStatus.BadRequest,
+            extensions: [
+               {
+                  field: 'email',
+                  message: 'email should be unique',
+               },
+            ],
+            data: null,
+         };
+      }
 
-        const passwordHash = await this.bcryptService.generateHash(dto.password);
+      const passwordHash = await this.bcryptService.generateHash(dto.password);
 
-        const user = this.UserModel.createInstance({
-            login: dto.login,
-            email: dto.email,
-            passwordHash,
-        });
+      const user = this.UserModel.createInstance({
+         login: dto.login,
+         email: dto.email,
+         passwordHash,
+      });
 
-        await this.usersRepository.save(user);
+      await this.usersRepository.save(user);
 
-        return {
-            status: ResultStatus.Created,
+      return {
+         status: ResultStatus.Created,
+         extensions: [],
+         data: user._id.toString(),
+      };
+   }
+
+   async deleteUser(id: string): Promise<Result> {
+      const user = await this.usersRepository.findById(id);
+
+      if (!user) {
+         return {
+            status: ResultStatus.NotFound,
             extensions: [],
-            data: user._id.toString(),
-        };
-    }
+            data: null,
+         };
+      }
+
+      user.makeDeleted();
+
+      await this.usersRepository.save(user);
+
+      return {
+         status: ResultStatus.NoContent,
+         extensions: [],
+         data: null,
+      };
+   }
 }
