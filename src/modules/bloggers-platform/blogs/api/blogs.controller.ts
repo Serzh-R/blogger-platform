@@ -20,12 +20,18 @@ import { PaginatedViewDto } from '../../../../core/dto/paginated.view-dto';
 import { CreateBlogInputDto } from './input-dto/create-blog.input-dto';
 import { ResultStatus } from '../../../../core/result/result.types';
 import { UpdateBlogInputDto } from './input-dto/update-blog.input-dto';
+import { PostsService } from '../../posts/application/posts.service';
+import { PostsQueryRepository } from '../../posts/infrastructure/query/posts.query-repository';
+import { CreateBlogPostInputDto } from './input-dto/create-blog-post.input-dto';
+import { PostViewDto } from '../../posts/api/view-dto/post.view-dto';
 
 @Controller('blogs')
 export class BlogsController {
    constructor(
       private readonly blogsService: BlogsService,
       private readonly blogsQueryRepository: BlogsQueryRepository,
+      private readonly postsService: PostsService,
+      private readonly postsQueryRepository: PostsQueryRepository,
    ) {}
 
    @Get()
@@ -61,6 +67,41 @@ export class BlogsController {
       }
 
       return blog;
+   }
+
+   @Post(':blogId/posts')
+   async createPost(
+      @Param('blogId') blogId: string,
+      @Body() body: CreateBlogPostInputDto,
+   ): Promise<PostViewDto> {
+      const blog = await this.blogsQueryRepository.findById(blogId);
+
+      if (!blog) {
+         throw new NotFoundException('Blog not found');
+      }
+
+      const result = await this.postsService.createPost({
+         title: body.title,
+         shortDescription: body.shortDescription,
+         content: body.content,
+         blogId: blog.id,
+      });
+
+      if (result.status === ResultStatus.BadRequest) {
+         throw new NotFoundException('Blog not found');
+      }
+
+      if (result.status !== ResultStatus.Created || result.data === null) {
+         throw new InternalServerErrorException('Failed to create post');
+      }
+
+      const post = await this.postsQueryRepository.findById(result.data);
+
+      if (!post) {
+         throw new InternalServerErrorException('Created post not found');
+      }
+
+      return post;
    }
 
    @Put(':id')
