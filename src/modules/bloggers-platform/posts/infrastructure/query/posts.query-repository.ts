@@ -50,28 +50,31 @@ export class PostsQueryRepository {
          filter.blogId = blogId;
       }
 
-      const totalCount = await this.PostModel.countDocuments({ filter });
+      const [totalCount, posts] = await Promise.all([
+         this.PostModel.countDocuments(filter).exec(),
 
-      const posts = await this.PostModel.find({ filter })
-         .sort({ [query.sortBy]: query.sortDirection })
-         .skip(query.calculateSkip())
-         .limit(query.pageSize);
+         this.PostModel.find(filter)
+            .sort({ [query.sortBy]: query.sortDirection })
+            .skip(query.calculateSkip())
+            .limit(query.pageSize)
+            .exec(),
+      ]);
 
-      const items: PostViewDto[] = [];
+      const items = await Promise.all(
+         posts.map(async (post): Promise<PostViewDto> => {
+            const likes = await this.likesQueryRepository.findNewestByPostId(
+               post._id.toString(),
+            );
 
-      for (const post of posts) {
-         const likes = await this.likesQueryRepository.findNewestByPostId(
-            post._id.toString(),
-         );
+            const newestLikes = likes.map((like) => ({
+               addedAt: like.createdAt.toISOString(),
+               userId: like.authorId,
+               login: like.authorLogin,
+            }));
 
-         const newestLikes = likes.map((like) => ({
-            addedAt: like.createdAt.toISOString(),
-            userId: like.authorId,
-            login: like.authorLogin,
-         }));
-
-         items.push(PostViewDto.mapToView(post, newestLikes));
-      }
+            return PostViewDto.mapToView(post, newestLikes);
+         }),
+      );
 
       return PaginatedViewDto.mapToView({
          items,

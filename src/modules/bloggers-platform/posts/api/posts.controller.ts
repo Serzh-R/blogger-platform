@@ -21,12 +21,18 @@ import { PaginatedViewDto } from '../../../../core/dto/paginated.view-dto';
 import { CreatePostInputDto } from './input-dto/create-post.input-dto';
 import { ResultStatus } from '../../../../core/result/result.types';
 import { UpdatePostInputDto } from './input-dto/update-post.input-dto';
+//import { CommentsService } from '../../comments/application/comments.service';
+import { CommentsQueryRepository } from '../../comments/infrastructure/query/comments.query-repository';
+import { GetCommentsQueryParams } from '../../comments/api/input-dto/get-comments-query-params.input-dto';
+import { CommentViewDto } from '../../comments/api/view-dto/comment.view-dto';
 
 @Controller('posts')
 export class PostsController {
    constructor(
       private readonly postsService: PostsService,
       private readonly postsQueryRepository: PostsQueryRepository,
+      //private readonly commentsService: CommentsService,
+      private readonly commentsQueryRepository: CommentsQueryRepository,
    ) {}
 
    @Get()
@@ -47,6 +53,20 @@ export class PostsController {
       return post;
    }
 
+   @Get(':postId/comments')
+   async getComments(
+      @Param('postId') postId: string,
+      @Query() query: GetCommentsQueryParams,
+   ): Promise<PaginatedViewDto<CommentViewDto>> {
+      const post = await this.postsQueryRepository.findById(postId);
+
+      if (!post) {
+         throw new NotFoundException('Post not found');
+      }
+
+      return this.commentsQueryRepository.findCommentsByPostId(post.id, query);
+   }
+
    @Post()
    async createPost(@Body() body: CreatePostInputDto): Promise<PostViewDto> {
       const result = await this.postsService.createPost(body);
@@ -61,13 +81,7 @@ export class PostsController {
          throw new InternalServerErrorException('Failed to create post');
       }
 
-      const post = await this.postsQueryRepository.findById(result.data);
-
-      if (!post) {
-         throw new InternalServerErrorException('Created post not found');
-      }
-
-      return post;
+      return PostViewDto.mapToView(result.data, []);
    }
 
    @Put(':id')

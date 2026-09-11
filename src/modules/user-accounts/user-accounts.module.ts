@@ -8,20 +8,22 @@ import {BcryptService} from './application/bcrypt.service'
 import {UsersQueryRepository} from './infrastructure/query/users.query-repository'
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      {
-        name: User.name,
-        schema: UserSchema,
-      },
-    ]),
-  ],
-  controllers: [UsersController],
-  providers: [
+   imports: [
+      MongooseModule.forFeature([
+         {
+            name: User.name,
+            schema: UserSchema,
+         },
+      ]),
+   ],
+   controllers: [UsersController],
+   providers: [
       UsersService,
       UsersRepository,
       UsersQueryRepository,
       BcryptService,
-  ],
+   ],
+
+   exports: [UsersRepository],
 })
 export class UserAccountsModule {}

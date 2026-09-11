@@ -1,16 +1,16 @@
 import {
-  BadRequestException,
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  InternalServerErrorException,
-  NotFoundException,
-  Param,
-  Post,
-  Query,
+   BadRequestException,
+   Body,
+   Controller,
+   Delete,
+   Get,
+   HttpCode,
+   HttpStatus,
+   InternalServerErrorException,
+   NotFoundException,
+   Param,
+   Post,
+   Query,
 } from '@nestjs/common';
 import { UsersService } from '../application/users.service';
 import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
@@ -22,50 +22,50 @@ import { ResultStatus } from '../../../core/result/result.types';
 
 @Controller('users')
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly usersQueryRepository: UsersQueryRepository,
-  ) {}
+   constructor(
+      private readonly usersService: UsersService,
+      private readonly usersQueryRepository: UsersQueryRepository,
+   ) {}
 
-  @Get()
-  async getUsers(
-    @Query() query: GetUsersQueryParams,
-  ): Promise<PaginatedViewDto<UserViewDto>> {
-    return this.usersQueryRepository.findAll(query);
-  }
+   @Get()
+   async getUsers(
+      @Query() query: GetUsersQueryParams,
+   ): Promise<PaginatedViewDto<UserViewDto>> {
+      return this.usersQueryRepository.findAll(query);
+   }
 
-  @Post()
-  async createUser(@Body() body: CreateUserInputDto): Promise<UserViewDto> {
-    const result = await this.usersService.createUser(body);
+   @Post()
+   async createUser(@Body() body: CreateUserInputDto): Promise<UserViewDto> {
+      const result = await this.usersService.createUser(body);
 
-    if (result.status === ResultStatus.BadRequest) {
-      throw new BadRequestException({
-        errorsMessage: result.extensions,
-      });
-    }
+      if (result.status === ResultStatus.BadRequest) {
+         throw new BadRequestException({
+            errorsMessages: result.extensions,
+         });
+      }
 
-    if (!result.data) {
-      throw new InternalServerErrorException(
-        'User ID was not returned after creation',
-      );
-    }
+      if (!result.data) {
+         throw new InternalServerErrorException(
+            'User ID was not returned after creation',
+         );
+      }
 
-    const createdUser = await this.usersQueryRepository.findById(result.data);
+      const createdUser = await this.usersQueryRepository.findById(result.data);
 
-    if (!createdUser) {
-      throw new InternalServerErrorException('Created user was not found');
-    }
+      if (!createdUser) {
+         throw new InternalServerErrorException('Created user was not found');
+      }
 
-    return createdUser;
-  }
+      return createdUser;
+   }
 
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteUser(@Param('id') id: string): Promise<void> {
-    const result = await this.usersService.deleteUser(id);
+   @Delete(':id')
+   @HttpCode(HttpStatus.NO_CONTENT)
+   async deleteUser(@Param('id') id: string): Promise<void> {
+      const result = await this.usersService.deleteUser(id);
 
-    if (result.status === ResultStatus.NotFound) {
-      throw new NotFoundException('User not found');
-    }
-  }
+      if (result.status === ResultStatus.NotFound) {
+         throw new NotFoundException('User not found');
+      }
+   }
 }

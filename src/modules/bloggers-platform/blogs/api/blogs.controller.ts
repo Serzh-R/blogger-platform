@@ -24,6 +24,7 @@ import { PostsService } from '../../posts/application/posts.service';
 import { PostsQueryRepository } from '../../posts/infrastructure/query/posts.query-repository';
 import { CreateBlogPostInputDto } from './input-dto/create-blog-post.input-dto';
 import { PostViewDto } from '../../posts/api/view-dto/post.view-dto';
+import { GetPostsQueryParams } from '../../posts/api/input-dto/get-posts-query-params.input-dto';
 
 @Controller('blogs')
 export class BlogsController {
@@ -50,6 +51,20 @@ export class BlogsController {
       }
 
       return blog;
+   }
+
+   @Get(':blogId/posts')
+   async getPosts(
+      @Param('blogId') blogId: string,
+      @Query() query: GetPostsQueryParams,
+   ): Promise<PaginatedViewDto<PostViewDto>> {
+      const blog = await this.blogsQueryRepository.findById(blogId);
+
+      if (!blog) {
+         throw new NotFoundException('Blog not found');
+      }
+
+      return this.postsQueryRepository.findAll(query, blog.id);
    }
 
    @Post()
@@ -95,13 +110,7 @@ export class BlogsController {
          throw new InternalServerErrorException('Failed to create post');
       }
 
-      const post = await this.postsQueryRepository.findById(result.data);
-
-      if (!post) {
-         throw new InternalServerErrorException('Created post not found');
-      }
-
-      return post;
+      return PostViewDto.mapToView(result.data, []);
    }
 
    @Put(':id')

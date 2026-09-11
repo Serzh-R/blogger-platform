@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { BlogsRepository } from '../../blogs/infrastructure/blogs.repository';
-import { Post } from '../domain/post.entity';
+import { Post, PostDocument } from '../domain/post.entity';
 import type { PostModelType } from '../domain/post.entity';
 import { PostsRepository } from '../infrastructure/posts.repository';
 import { Result, ResultStatus } from '../../../../core/result/result.types';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { LikesRepository } from '../../likes/infrastructure/likes.repository';
+import { CommentsRepository } from '../../comments/infrastructure/comments.repository';
 
 @Injectable()
 export class PostsService {
@@ -15,9 +17,11 @@ export class PostsService {
       private readonly PostModel: PostModelType,
       private readonly postsRepository: PostsRepository,
       private readonly blogsRepository: BlogsRepository,
+      private readonly likesRepository: LikesRepository,
+      private readonly commentsRepository: CommentsRepository,
    ) {}
 
-   async createPost(dto: CreatePostDto): Promise<Result<string>> {
+   async createPost(dto: CreatePostDto): Promise<Result<PostDocument>> {
       const blog = await this.blogsRepository.findById(dto.blogId);
 
       if (!blog) {
@@ -47,7 +51,7 @@ export class PostsService {
       return {
          status: ResultStatus.Created,
          extensions: [],
-         data: post._id.toString(),
+         data: post,
       };
    }
 
@@ -107,6 +111,16 @@ export class PostsService {
             data: null,
          };
       }
+
+      const postId = post._id.toString();
+
+      const commentIds = await this.commentsRepository.findIdsByPostIds([
+         postId,
+      ]);
+
+      await this.likesRepository.deleteByParentIds([postId, ...commentIds]);
+
+      await this.commentsRepository.deleteByPostIds([postId]);
 
       await this.postsRepository.delete(post);
 

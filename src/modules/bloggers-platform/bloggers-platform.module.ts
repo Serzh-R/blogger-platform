@@ -12,9 +12,18 @@ import { Like, LikeSchema } from './likes/domain/like.entity';
 import { LikesQueryRepository } from './likes/infrastructure/query/likes.query-repository';
 import { PostsQueryRepository } from './posts/infrastructure/query/posts.query-repository';
 import { PostsController } from './posts/api/posts.controller';
+import { LikesRepository } from './likes/infrastructure/likes.repository';
+import { CommentsRepository } from './comments/infrastructure/comments.repository';
+import { Comment, CommentSchema } from './comments/domain/comment.entity';
+import { CommentsQueryRepository } from './comments/infrastructure/query/comments.query-repository';
+import { UserAccountsModule } from '../user-accounts/user-accounts.module';
+//import { CommentsService } from './comments/application/comments.service';
+import { CommentsController } from './comments/api/comments.controller';
 
 @Module({
    imports: [
+      UserAccountsModule,
+
       MongooseModule.forFeature([
          {
             name: Blog.name,
@@ -28,9 +37,13 @@ import { PostsController } from './posts/api/posts.controller';
             name: Like.name,
             schema: LikeSchema,
          },
+         {
+            name: Comment.name,
+            schema: CommentSchema,
+         },
       ]),
    ],
-   controllers: [BlogsController, PostsController],
+   controllers: [BlogsController, PostsController, CommentsController],
    providers: [
       BlogsService,
       BlogsRepository,
@@ -38,7 +51,11 @@ import { PostsController } from './posts/api/posts.controller';
       PostsService,
       PostsRepository,
       PostsQueryRepository,
+      LikesRepository,
       LikesQueryRepository,
+      //CommentsService,
+      CommentsRepository,
+      CommentsQueryRepository,
    ],
 })
 export class BloggersPlatformModule {}
