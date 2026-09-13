@@ -1,16 +1,14 @@
 import {
-   BadRequestException,
    Body,
    Controller,
    Delete,
    Get,
    HttpCode,
    HttpStatus,
-   InternalServerErrorException,
-   NotFoundException,
    Param,
    Post,
    Query,
+   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from '../application/users.service';
 import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
@@ -18,9 +16,12 @@ import { GetUsersQueryParams } from './input-dto/get-users-query-params.input-dt
 import { PaginatedViewDto } from '../../../core/dto/paginated.view-dto';
 import { UserViewDto } from './view-dto/user.view-dto';
 import { CreateUserInputDto } from './input-dto/create-user.input-dto';
-import { ResultStatus } from '../../../core/result/result.types';
+import { BasicAuthGuard } from '../guards/basic/basic-auth.guard';
+import { DomainException } from '../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../core/exceptions/domain-exception-codes';
 
 @Controller('users')
+@UseGuards(BasicAuthGuard)
 export class UsersController {
    constructor(
       private readonly usersService: UsersService,
@@ -36,24 +37,15 @@ export class UsersController {
 
    @Post()
    async createUser(@Body() body: CreateUserInputDto): Promise<UserViewDto> {
-      const result = await this.usersService.createUser(body);
+      const userId = await this.usersService.createUser(body);
 
-      if (result.status === ResultStatus.BadRequest) {
-         throw new BadRequestException({
-            errorsMessages: result.extensions,
-         });
-      }
-
-      if (!result.data) {
-         throw new InternalServerErrorException(
-            'User ID was not returned after creation',
-         );
-      }
-
-      const createdUser = await this.usersQueryRepository.findById(result.data);
+      const createdUser = await this.usersQueryRepository.findById(userId);
 
       if (!createdUser) {
-         throw new InternalServerErrorException('Created user was not found');
+         throw new DomainException({
+            code: DomainExceptionCode.InternalServerError,
+            message: 'Created user was not found',
+         });
       }
 
       return createdUser;
@@ -62,10 +54,6 @@ export class UsersController {
    @Delete(':id')
    @HttpCode(HttpStatus.NO_CONTENT)
    async deleteUser(@Param('id') id: string): Promise<void> {
-      const result = await this.usersService.deleteUser(id);
-
-      if (result.status === ResultStatus.NotFound) {
-         throw new NotFoundException('User not found');
-      }
+      await this.usersService.deleteUser(id);
    }
 }

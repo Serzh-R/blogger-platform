@@ -6,6 +6,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { SETTINGS } from './core/settings';
 import { BloggersPlatformModule } from './modules/bloggers-platform/bloggers-platform.module';
 import { TestingModule } from './modules/testing/testing.module';
+import { APP_FILTER } from '@nestjs/core';
+import { DomainHttpExceptionsFilter } from './core/exceptions/filters/domain-exceptions.filter';
+import { AllExceptionsFilter } from './core/exceptions/filters/all-exceptions.filter';
 
 @Module({
    imports: [
