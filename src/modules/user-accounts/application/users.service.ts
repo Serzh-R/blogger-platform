@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateUserInputDto } from '../api/input-dto/create-user.input-dto';
-import { User } from '../domain/user.entity';
+import { User, UserDocument } from '../domain/user.entity';
 import type { UserModelType } from '../domain/user.entity';
 import { UsersRepository } from '../infrastructure/users.repository';
 import { BcryptService } from './bcrypt.service';
 import { DomainException } from '../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../core/exceptions/domain-exception-codes';
+import { EmailService } from '../../notifications/email.service';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class UsersService {
@@ -15,9 +17,12 @@ export class UsersService {
       private readonly UserModel: UserModelType,
       private readonly usersRepository: UsersRepository,
       private readonly bcryptService: BcryptService,
+      private readonly emailService: EmailService,
    ) {}
 
-   async createUser(dto: CreateUserInputDto): Promise<string> {
+   private async createUserDocument(
+      dto: CreateUserInputDto,
+   ): Promise<UserDocument> {
       const userByLogin = await this.usersRepository.findByLogin(dto.login);
 
       if (userByLogin) {
@@ -50,15 +55,40 @@ export class UsersService {
 
       const passwordHash = await this.bcryptService.generateHash(dto.password);
 
-      const user = this.UserModel.createInstance({
+      return this.UserModel.createInstance({
          login: dto.login,
          email: dto.email,
          passwordHash,
       });
+   }
+
+   async createUser(dto: CreateUserInputDto): Promise<string> {
+      const user = await this.createUserDocument(dto);
 
       await this.usersRepository.save(user);
 
       return user._id.toString();
+   }
+
+   async registerUser(dto: CreateUserInputDto): Promise<void> {
+      const user = await this.createUserDocument(dto);
+
+      const confirmationCode = randomUUID();
+
+      const expirationDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      user.setConfirmationCode(confirmationCode, expirationDate);
+
+      await this.usersRepository.save(user);
+
+      try {
+         await this.emailService.sendConfirmationEmail(
+            user.email,
+            confirmationCode,
+         );
+      } catch (error) {
+         console.error('Confirmation email sending failed', error);
+      }
    }
 
    async deleteUser(id: string): Promise<void> {

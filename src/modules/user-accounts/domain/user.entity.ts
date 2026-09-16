@@ -1,6 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
 import { CreateUserDomainDto } from './dto/create-user.domain-dto';
+import {
+   EmailConfirmation,
+   EmailConfirmationSchema,
+} from './email-confirmation.schema';
 
 export const loginConstraints = {
    minLength: 3,
@@ -23,33 +27,30 @@ export const emailConstraints = {
    versionKey: false,
 })
 export class User {
-   @Prop({
-      type: String,
-      required: true,
-      ...loginConstraints,
-   })
+   @Prop({ type: String, required: true, ...loginConstraints })
    login: string;
 
-   @Prop({
-      type: String,
-      required: true,
-      ...emailConstraints,
-   })
+   @Prop({ type: String, required: true, ...emailConstraints })
    email: string;
 
-   @Prop({
-      type: String,
-      required: true,
-   })
+   @Prop({ type: String, required: true })
    passwordHash: string;
+
+   @Prop({
+      type: EmailConfirmationSchema,
+      required: true,
+      default: () => ({
+         confirmationCode: null,
+         expirationDate: null,
+         isConfirmed: false,
+      }),
+   })
+   emailConfirmation: EmailConfirmation;
 
    createdAt: Date;
    updatedAt: Date;
 
-   @Prop({
-      type: Date,
-      default: null,
-   })
+   @Prop({ type: Date, default: null })
    deletedAt: Date | null;
 
    static createInstance(dto: CreateUserDomainDto): UserDocument {
@@ -59,8 +60,19 @@ export class User {
       user.email = dto.email;
       user.passwordHash = dto.passwordHash;
       user.deletedAt = null;
+      user.emailConfirmation = {
+         confirmationCode: null,
+         expirationDate: null,
+         isConfirmed: false,
+      };
 
       return user as UserDocument;
+   }
+
+   setConfirmationCode(code: string, expirationDate: Date): void {
+      this.emailConfirmation.confirmationCode = code;
+      this.emailConfirmation.expirationDate = expirationDate;
+      this.emailConfirmation.isConfirmed = false;
    }
 
    makeDeleted(): void {
