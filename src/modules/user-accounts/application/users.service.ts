@@ -81,14 +81,79 @@ export class UsersService {
 
       await this.usersRepository.save(user);
 
-      try {
-         await this.emailService.sendConfirmationEmail(
-            user.email,
-            confirmationCode,
-         );
-      } catch (error) {
-         console.error('Confirmation email sending failed', error);
+      void this.emailService
+         .sendConfirmationEmail(user.email, confirmationCode)
+         .catch((error: unknown) => {
+            console.error('Confirmation email sending failed', error);
+         });
+   }
+
+   async confirmRegistration(confirmationCode: string): Promise<void> {
+      const user =
+         await this.usersRepository.findByConfirmationCode(confirmationCode);
+
+      if (!user || !user.confirmEmail(confirmationCode)) {
+         throw new DomainException({
+            code: DomainExceptionCode.BadRequest,
+            message: 'Registration confirmation failed',
+            extensions: [
+               {
+                  field: 'code',
+                  message:
+                     'Confirmation code is incorrect, expired or already applied',
+               },
+            ],
+         });
       }
+
+      await this.usersRepository.save(user);
+   }
+
+   async resendRegistrationEmail(email: string): Promise<void> {
+      const user = await this.usersRepository.findByEmail(email);
+
+      if (!user) {
+         throw new DomainException({
+            code: DomainExceptionCode.BadRequest,
+            message: 'Registration email resending failed',
+            extensions: [
+               {
+                  field: 'email',
+                  message: 'User with this email does not exist',
+               },
+            ],
+         });
+      }
+
+      const confirmationCode = randomUUID();
+
+      const expirationDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      const confirmationCodeWasSet = user.setConfirmationCode(
+         confirmationCode,
+         expirationDate,
+      );
+
+      if (!confirmationCodeWasSet) {
+         throw new DomainException({
+            code: DomainExceptionCode.BadRequest,
+            message: 'Registration email resending failed',
+            extensions: [
+               {
+                  field: 'email',
+                  message: 'Email is already confirmed',
+               },
+            ],
+         });
+      }
+
+      await this.usersRepository.save(user);
+
+      void this.emailService
+         .sendConfirmationEmail(user.email, confirmationCode)
+         .catch((error: unknown) => {
+            console.error('Confirmation email resending failed', error);
+         });
    }
 
    async deleteUser(id: string): Promise<void> {

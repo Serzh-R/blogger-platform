@@ -16,6 +16,8 @@ import { JwtAuthGuard } from '../guards/bearer/jwt-auth.guard';
 import { MeViewDto } from './view-dto/me.view-dto';
 import { UsersService } from '../application/users.service';
 import { CreateUserInputDto } from './input-dto/create-user.input-dto';
+import { RegistrationConfirmationInputDto } from './input-dto/registration-confirmation.input-dto';
+import { RegistrationEmailResendingInputDto } from './input-dto/registration-email-resending.input-dto';
 
 @Controller('auth')
 export class AuthController {
@@ -29,6 +31,22 @@ export class AuthController {
    @HttpCode(HttpStatus.NO_CONTENT)
    async registration(@Body() body: CreateUserInputDto): Promise<void> {
       await this.usersService.registerUser(body);
+   }
+
+   @Post('registration-confirmation')
+   @HttpCode(HttpStatus.NO_CONTENT)
+   async registrationConfirmation(
+      @Body() body: RegistrationConfirmationInputDto,
+   ): Promise<void> {
+      await this.usersService.confirmRegistration(body.code);
+   }
+
+   @Post('registration-email-resending')
+   @HttpCode(HttpStatus.NO_CONTENT)
+   async registrationEmailResending(
+      @Body() body: RegistrationEmailResendingInputDto,
+   ): Promise<void> {
+      await this.usersService.resendRegistrationEmail(body.email);
    }
 
    @Post('login')

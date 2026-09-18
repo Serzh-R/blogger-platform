@@ -69,10 +69,41 @@ export class User {
       return user as UserDocument;
    }
 
-   setConfirmationCode(code: string, expirationDate: Date): void {
+   setConfirmationCode(code: string, expirationDate: Date): boolean {
+      if (this.emailConfirmation.isConfirmed) {
+         return false;
+      }
+
       this.emailConfirmation.confirmationCode = code;
       this.emailConfirmation.expirationDate = expirationDate;
-      this.emailConfirmation.isConfirmed = false;
+
+      return true;
+   }
+
+   confirmEmail(
+      confirmationCode: string,
+      currentDate: Date = new Date(),
+   ): boolean {
+      if (this.emailConfirmation.isConfirmed) {
+         return false;
+      }
+
+      if (this.emailConfirmation.confirmationCode !== confirmationCode) {
+         return false;
+      }
+
+      const expirationDate = this.emailConfirmation.expirationDate;
+
+      if (
+         !expirationDate ||
+         expirationDate.getTime() <= currentDate.getTime()
+      ) {
+         return false;
+      }
+
+      this.emailConfirmation.isConfirmed = true;
+
+      return true;
    }
 
    makeDeleted(): void {
