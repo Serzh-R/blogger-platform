@@ -57,4 +57,13 @@ export class UsersRepository {
          $or: [{ login: loginOrEmail }, { email: loginOrEmail }],
       });
    }
+
+   async findByPasswordRecoveryCode(
+      recoveryCode: string,
+   ): Promise<UserDocument | null> {
+      return this.UserModel.findOne({
+         'passwordRecovery.recoveryCode': recoveryCode,
+         deletedAt: null,
+      });
+   }
 }

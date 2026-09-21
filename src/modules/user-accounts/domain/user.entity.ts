@@ -5,6 +5,10 @@ import {
    EmailConfirmation,
    EmailConfirmationSchema,
 } from './email-confirmation.schema';
+import {
+   PasswordRecovery,
+   PasswordRecoverySchema,
+} from './password-recovery.schema';
 
 export const loginConstraints = {
    minLength: 3,
@@ -47,6 +51,16 @@ export class User {
    })
    emailConfirmation: EmailConfirmation;
 
+   @Prop({
+      type: PasswordRecoverySchema,
+      required: true,
+      default: () => ({
+         recoveryCode: null,
+         expirationDate: null,
+      }),
+   })
+   passwordRecovery: PasswordRecovery;
+
    createdAt: Date;
    updatedAt: Date;
 
@@ -59,12 +73,16 @@ export class User {
       user.login = dto.login;
       user.email = dto.email;
       user.passwordHash = dto.passwordHash;
-      user.deletedAt = null;
       user.emailConfirmation = {
          confirmationCode: null,
          expirationDate: null,
          isConfirmed: false,
       };
+      user.passwordRecovery = {
+         recoveryCode: null,
+         expirationDate: null,
+      };
+      user.deletedAt = null;
 
       return user as UserDocument;
    }
@@ -104,6 +122,38 @@ export class User {
       this.emailConfirmation.isConfirmed = true;
 
       return true;
+   }
+
+   setPasswordRecoveryCode(recoveryCode: string, expirationDate: Date): void {
+      this.passwordRecovery.recoveryCode = recoveryCode;
+      this.passwordRecovery.expirationDate = expirationDate;
+   }
+
+   isPasswordRecoveryCodeValid(
+      recoveryCode: string,
+      currentDate: Date = new Date(),
+   ): boolean {
+      if (this.passwordRecovery.recoveryCode !== recoveryCode) {
+         return false;
+      }
+
+      const expirationDate = this.passwordRecovery.expirationDate;
+
+      if (
+         !expirationDate ||
+         expirationDate.getTime() <= currentDate.getTime()
+      ) {
+         return false;
+      }
+
+      return true;
+   }
+
+   setNewPasswordHash(passwordHash: string): void {
+      this.passwordHash = passwordHash;
+
+      this.passwordRecovery.recoveryCode = null;
+      this.passwordRecovery.expirationDate = null;
    }
 
    makeDeleted(): void {

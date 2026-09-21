@@ -9,6 +9,7 @@ import { DomainException } from '../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../core/exceptions/domain-exception-codes';
 import { EmailService } from '../../notifications/email.service';
 import { randomUUID } from 'node:crypto';
+import { NewPasswordInputDto } from '../api/input-dto/new-password.input-dto';
 
 @Injectable()
 export class UsersService {
@@ -153,6 +154,55 @@ export class UsersService {
          .sendConfirmationEmail(user.email, confirmationCode)
          .catch((error: unknown) => {
             console.error('Confirmation email resending failed', error);
+         });
+   }
+
+   async setNewPassword(dto: NewPasswordInputDto): Promise<void> {
+      const user = await this.usersRepository.findByPasswordRecoveryCode(
+         dto.recoveryCode,
+      );
+
+      if (!user || !user.isPasswordRecoveryCodeValid(dto.recoveryCode)) {
+         throw new DomainException({
+            code: DomainExceptionCode.BadRequest,
+            message: 'Recovery code is incorrect or expired',
+            extensions: [
+               {
+                  field: 'recoveryCode',
+                  message: 'Recovery code is incorrect or expired',
+               },
+            ],
+         });
+      }
+
+      const passwordHash = await this.bcryptService.generateHash(
+         dto.newPassword,
+      );
+
+      user.setNewPasswordHash(passwordHash);
+
+      await this.usersRepository.save(user);
+   }
+
+   async requestPasswordRecovery(email: string): Promise<void> {
+      const user = await this.usersRepository.findByEmail(email);
+
+      if (!user) {
+         return;
+      }
+
+      const recoveryCode = randomUUID();
+
+      const expirationDate = new Date(Date.now() + 60 * 60 * 1000);
+
+      user.setPasswordRecoveryCode(recoveryCode, expirationDate);
+
+      await this.usersRepository.save(user);
+
+      void this.emailService
+         .sendPasswordRecoveryEmail(user.email, recoveryCode)
+         .catch((error: unknown) => {
+            console.error('Password recovery email sending failed', error);
          });
    }
 

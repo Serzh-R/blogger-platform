@@ -27,4 +27,25 @@ export class EmailService {
          `,
       });
    }
+
+   async sendPasswordRecoveryEmail(
+      email: string,
+      recoveryCode: string,
+   ): Promise<void> {
+      const recoveryLink =
+         `https://some-front.com/password-recovery` +
+         `?recoveryCode=${recoveryCode}`;
+
+      await this.mailerService.sendMail({
+         to: email,
+         subject: 'Password recovery',
+         html: `
+         <h1>Password recovery</h1>
+         <p>To finish password recovery, follow the link below:</p>
+         <a href="${recoveryLink}">
+            Complete password recovery
+         </a>
+      `,
+      });
+   }
 }

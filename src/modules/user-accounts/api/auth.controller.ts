@@ -18,6 +18,8 @@ import { UsersService } from '../application/users.service';
 import { CreateUserInputDto } from './input-dto/create-user.input-dto';
 import { RegistrationConfirmationInputDto } from './input-dto/registration-confirmation.input-dto';
 import { RegistrationEmailResendingInputDto } from './input-dto/registration-email-resending.input-dto';
+import { PasswordRecoveryInputDto } from './input-dto/password-recovery.input-dto';
+import { NewPasswordInputDto } from './input-dto/new-password.input-dto';
 
 @Controller('auth')
 export class AuthController {
@@ -47,6 +49,20 @@ export class AuthController {
       @Body() body: RegistrationEmailResendingInputDto,
    ): Promise<void> {
       await this.usersService.resendRegistrationEmail(body.email);
+   }
+
+   @Post('new-password')
+   @HttpCode(HttpStatus.NO_CONTENT)
+   async setNewPassword(@Body() dto: NewPasswordInputDto): Promise<void> {
+      await this.usersService.setNewPassword(dto);
+   }
+
+   @Post('password-recovery')
+   @HttpCode(HttpStatus.NO_CONTENT)
+   async passwordRecovery(
+      @Body() dto: PasswordRecoveryInputDto,
+   ): Promise<void> {
+      await this.usersService.requestPasswordRecovery(dto.email);
    }
 
    @Post('login')
