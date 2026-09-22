@@ -14,17 +14,22 @@ import type { UserContextDto } from '../guards/dto/user-context.dto';
 import { AuthQueryRepository } from '../infrastructure/query/auth.query-repository';
 import { JwtAuthGuard } from '../guards/bearer/jwt-auth.guard';
 import { MeViewDto } from './view-dto/me.view-dto';
-import { UsersService } from '../application/users.service';
 import { CreateUserInputDto } from './input-dto/create-user.input-dto';
 import { RegistrationConfirmationInputDto } from './input-dto/registration-confirmation.input-dto';
 import { RegistrationEmailResendingInputDto } from './input-dto/registration-email-resending.input-dto';
 import { PasswordRecoveryInputDto } from './input-dto/password-recovery.input-dto';
 import { NewPasswordInputDto } from './input-dto/new-password.input-dto';
+import { CommandBus } from '@nestjs/cqrs';
+import { RegisterUserCommand } from '../application/usecases/register-user.usecase';
+import { ConfirmRegistrationCommand } from '../application/usecases/confirm-registration.usecase';
+import { ResendRegistrationEmailCommand } from '../application/usecases/resend-registration-email.usecase';
+import { PasswordRecoveryCommand } from '../application/usecases/password-recovery.usecase';
+import { SetNewPasswordCommand } from '../application/usecases/set-new-password.usecase';
 
 @Controller('auth')
 export class AuthController {
    constructor(
-      private readonly usersService: UsersService,
+      private readonly commandBus: CommandBus,
       private readonly authService: AuthService,
       private readonly authQueryRepository: AuthQueryRepository,
    ) {}
@@ -32,7 +37,9 @@ export class AuthController {
    @Post('registration')
    @HttpCode(HttpStatus.NO_CONTENT)
    async registration(@Body() body: CreateUserInputDto): Promise<void> {
-      await this.usersService.registerUser(body);
+      await this.commandBus.execute<RegisterUserCommand, void>(
+         new RegisterUserCommand(body),
+      );
    }
 
    @Post('registration-confirmation')
@@ -40,7 +47,9 @@ export class AuthController {
    async registrationConfirmation(
       @Body() body: RegistrationConfirmationInputDto,
    ): Promise<void> {
-      await this.usersService.confirmRegistration(body.code);
+      await this.commandBus.execute<ConfirmRegistrationCommand, void>(
+         new ConfirmRegistrationCommand(body.code),
+      );
    }
 
    @Post('registration-email-resending')
@@ -48,13 +57,17 @@ export class AuthController {
    async registrationEmailResending(
       @Body() body: RegistrationEmailResendingInputDto,
    ): Promise<void> {
-      await this.usersService.resendRegistrationEmail(body.email);
+      await this.commandBus.execute<ResendRegistrationEmailCommand, void>(
+         new ResendRegistrationEmailCommand(body.email),
+      );
    }
 
    @Post('new-password')
    @HttpCode(HttpStatus.NO_CONTENT)
    async setNewPassword(@Body() dto: NewPasswordInputDto): Promise<void> {
-      await this.usersService.setNewPassword(dto);
+      await this.commandBus.execute<SetNewPasswordCommand, void>(
+         new SetNewPasswordCommand(dto),
+      );
    }
 
    @Post('password-recovery')
@@ -62,7 +75,9 @@ export class AuthController {
    async passwordRecovery(
       @Body() dto: PasswordRecoveryInputDto,
    ): Promise<void> {
-      await this.usersService.requestPasswordRecovery(dto.email);
+      await this.commandBus.execute<PasswordRecoveryCommand, void>(
+         new PasswordRecoveryCommand(dto.email),
+      );
    }
 
    @Post('login')

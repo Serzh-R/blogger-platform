@@ -6,9 +6,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { SETTINGS } from './core/settings';
 import { BloggersPlatformModule } from './modules/bloggers-platform/bloggers-platform.module';
 import { TestingModule } from './modules/testing/testing.module';
+import { CqrsModule } from '@nestjs/cqrs';
 
 @Module({
    imports: [
+      CqrsModule.forRoot(),
+
       MongooseModule.forRoot(SETTINGS.MONGO_URL, {
          dbName: SETTINGS.DB_NAME,
       }),

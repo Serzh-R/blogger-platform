@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { UsersController } from './api/users.controller';
-import { UsersService } from './application/users.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './domain/user.entity';
 import { UsersRepository } from './infrastructure/users.repository';
@@ -15,6 +14,14 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './guards/bearer/jwt.strategy';
 import { AuthQueryRepository } from './infrastructure/query/auth.query-repository';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { DeleteUserUseCase } from './application/usecases/delete-user.usecase';
+import { CreateUserUseCase } from './application/usecases/create-user.usecase';
+import { RegisterUserUseCase } from './application/usecases/register-user.usecase';
+import { UsersFactory } from './application/factories/users.factory';
+import { ConfirmRegistrationUseCase } from './application/usecases/confirm-registration.usecase';
+import { ResendRegistrationEmailUseCase } from './application/usecases/resend-registration-email.usecase';
+import { PasswordRecoveryUseCase } from './application/usecases/password-recovery.usecase';
+import { SetNewPasswordUseCase } from './application/usecases/set-new-password.usecase';
 
 @Module({
    imports: [
@@ -37,14 +44,22 @@ import { NotificationsModule } from '../notifications/notifications.module';
    ],
    controllers: [UsersController, AuthController],
    providers: [
-      UsersService,
       UsersRepository,
       UsersQueryRepository,
+      UsersFactory,
       BcryptService,
       AuthService,
       LocalStrategy,
       JwtStrategy,
       AuthQueryRepository,
+
+      CreateUserUseCase,
+      DeleteUserUseCase,
+      RegisterUserUseCase,
+      ConfirmRegistrationUseCase,
+      ResendRegistrationEmailUseCase,
+      PasswordRecoveryUseCase,
+      SetNewPasswordUseCase,
    ],
 
    exports: [UsersRepository],
