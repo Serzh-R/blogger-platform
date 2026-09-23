@@ -5,9 +5,9 @@ import {
    HttpCode,
    HttpStatus,
    Post,
+   Res,
    UseGuards,
 } from '@nestjs/common';
-import { AuthService } from '../application/auth.service';
 import { LocalAuthGuard } from '../guards/local/local-auth.guard';
 import { ExtractUserFromRequest } from '../guards/decorators/param/extract-user-from-request.decorator';
 import type { UserContextDto } from '../guards/dto/user-context.dto';
@@ -25,12 +25,13 @@ import { ConfirmRegistrationCommand } from '../application/usecases/confirm-regi
 import { ResendRegistrationEmailCommand } from '../application/usecases/resend-registration-email.usecase';
 import { PasswordRecoveryCommand } from '../application/usecases/password-recovery.usecase';
 import { SetNewPasswordCommand } from '../application/usecases/set-new-password.usecase';
+import { LoginUserCommand } from '../application/usecases/login-user.usecase';
+import type { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
    constructor(
       private readonly commandBus: CommandBus,
-      private readonly authService: AuthService,
       private readonly authQueryRepository: AuthQueryRepository,
    ) {}
 
@@ -83,10 +84,22 @@ export class AuthController {
    @Post('login')
    @HttpCode(HttpStatus.OK)
    @UseGuards(LocalAuthGuard)
-   login(
+   async login(
       @ExtractUserFromRequest() user: UserContextDto,
+      @Res({ passthrough: true }) response: Response,
    ): Promise<{ accessToken: string }> {
-      return this.authService.login(user.id);
+      const result = await this.commandBus.execute<
+         LoginUserCommand,
+         { accessToken: string }
+      >(new LoginUserCommand(user.id));
+
+      response.cookie('refreshToken', 'refresh-token-stub', {
+         httpOnly: true,
+         secure: false,
+         sameSite: 'lax',
+      });
+
+      return result;
    }
 
    @Get('me')

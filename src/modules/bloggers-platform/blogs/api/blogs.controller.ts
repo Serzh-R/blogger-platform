@@ -12,26 +12,27 @@ import {
    Put,
    Query,
 } from '@nestjs/common';
-import { BlogsService } from '../application/blogs.service';
 import { BlogsQueryRepository } from '../infrastructure/query/blogs.query-repository';
 import { BlogViewDto } from './view-dto/blog.view-dto';
 import { GetBlogsQueryParams } from './input-dto/get-blogs-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../core/dto/paginated.view-dto';
 import { CreateBlogInputDto } from './input-dto/create-blog.input-dto';
-import { ResultStatus } from '../../../../core/result/result.types';
 import { UpdateBlogInputDto } from './input-dto/update-blog.input-dto';
-import { PostsService } from '../../posts/application/posts.service';
 import { PostsQueryRepository } from '../../posts/infrastructure/query/posts.query-repository';
 import { CreateBlogPostInputDto } from './input-dto/create-blog-post.input-dto';
 import { PostViewDto } from '../../posts/api/view-dto/post.view-dto';
 import { GetPostsQueryParams } from '../../posts/api/input-dto/get-posts-query-params.input-dto';
+import { CommandBus } from '@nestjs/cqrs';
+import { CreateBlogCommand } from '../application/usecases/create-blog.usecase';
+import { UpdateBlogCommand } from '../application/usecases/update-blog.usecase';
+import { DeleteBlogCommand } from '../application/usecases/delete-blog.usecase';
+import { CreatePostCommand } from '../../posts/application/usecases/create-post.usecase';
 
 @Controller('blogs')
 export class BlogsController {
    constructor(
-      private readonly blogsService: BlogsService,
+      private readonly commandBus: CommandBus,
       private readonly blogsQueryRepository: BlogsQueryRepository,
-      private readonly postsService: PostsService,
       private readonly postsQueryRepository: PostsQueryRepository,
    ) {}
 
@@ -69,13 +70,11 @@ export class BlogsController {
 
    @Post()
    async createBlog(@Body() body: CreateBlogInputDto): Promise<BlogViewDto> {
-      const result = await this.blogsService.createBlog(body);
+      const blogId = await this.commandBus.execute<CreateBlogCommand, string>(
+         new CreateBlogCommand(body),
+      );
 
-      if (result.status !== ResultStatus.Created || result.data === null) {
-         throw new InternalServerErrorException('Failed to create blog');
-      }
-
-      const blog = await this.blogsQueryRepository.findById(result.data);
+      const blog = await this.blogsQueryRepository.findById(blogId);
 
       if (!blog) {
          throw new InternalServerErrorException('Created blog not found');
@@ -95,22 +94,22 @@ export class BlogsController {
          throw new NotFoundException('Blog not found');
       }
 
-      const result = await this.postsService.createPost({
-         title: body.title,
-         shortDescription: body.shortDescription,
-         content: body.content,
-         blogId: blog.id,
-      });
+      const postId = await this.commandBus.execute<CreatePostCommand, string>(
+         new CreatePostCommand({
+            title: body.title,
+            shortDescription: body.shortDescription,
+            content: body.content,
+            blogId: blog.id,
+         }),
+      );
 
-      if (result.status === ResultStatus.BadRequest) {
-         throw new NotFoundException('Blog not found');
+      const post = await this.postsQueryRepository.findById(postId);
+
+      if (!post) {
+         throw new InternalServerErrorException('Created post not found');
       }
 
-      if (result.status !== ResultStatus.Created || result.data === null) {
-         throw new InternalServerErrorException('Failed to create post');
-      }
-
-      return PostViewDto.mapToView(result.data, []);
+      return post;
    }
 
    @Put(':id')
@@ -119,28 +118,16 @@ export class BlogsController {
       @Param('id') id: string,
       @Body() body: UpdateBlogInputDto,
    ): Promise<void> {
-      const result = await this.blogsService.updateBlog(id, body);
-
-      if (result.status === ResultStatus.NotFound) {
-         throw new NotFoundException('Blog not found');
-      }
-
-      if (result.status !== ResultStatus.NoContent) {
-         throw new InternalServerErrorException('Failed to update blog');
-      }
+      await this.commandBus.execute<UpdateBlogCommand, void>(
+         new UpdateBlogCommand(id, body),
+      );
    }
 
    @Delete(':id')
    @HttpCode(HttpStatus.NO_CONTENT)
    async deleteBlog(@Param('id') id: string): Promise<void> {
-      const result = await this.blogsService.deleteBlog(id);
-
-      if (result.status === ResultStatus.NotFound) {
-         throw new NotFoundException('Blog not found');
-      }
-
-      if (result.status !== ResultStatus.NoContent) {
-         throw new InternalServerErrorException('Failed to delete blog');
-      }
+      await this.commandBus.execute<DeleteBlogCommand, void>(
+         new DeleteBlogCommand(id),
+      );
    }
 }

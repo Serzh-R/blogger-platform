@@ -22,6 +22,7 @@ import { ConfirmRegistrationUseCase } from './application/usecases/confirm-regis
 import { ResendRegistrationEmailUseCase } from './application/usecases/resend-registration-email.usecase';
 import { PasswordRecoveryUseCase } from './application/usecases/password-recovery.usecase';
 import { SetNewPasswordUseCase } from './application/usecases/set-new-password.usecase';
+import { LoginUserUseCase } from './application/usecases/login-user.usecase';
 
 @Module({
    imports: [
@@ -60,6 +61,7 @@ import { SetNewPasswordUseCase } from './application/usecases/set-new-password.u
       ResendRegistrationEmailUseCase,
       PasswordRecoveryUseCase,
       SetNewPasswordUseCase,
+      LoginUserUseCase,
    ],
 
    exports: [UsersRepository],

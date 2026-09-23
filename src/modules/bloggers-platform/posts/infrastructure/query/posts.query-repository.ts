@@ -27,9 +27,10 @@ export class PostsQueryRepository {
          return null;
       }
 
-      const likes = await this.likesQueryRepository.findNewestByPostId(
-         post._id.toString(),
-      );
+      const likes =
+         await this.likesQueryRepository.findThreeNewestLikesByPostId(
+            post._id.toString(),
+         );
 
       const newestLikes = likes.map((like) => ({
          addedAt: like.createdAt.toISOString(),
@@ -62,9 +63,10 @@ export class PostsQueryRepository {
 
       const items = await Promise.all(
          posts.map(async (post): Promise<PostViewDto> => {
-            const likes = await this.likesQueryRepository.findNewestByPostId(
-               post._id.toString(),
-            );
+            const likes =
+               await this.likesQueryRepository.findThreeNewestLikesByPostId(
+                  post._id.toString(),
+               );
 
             const newestLikes = likes.map((like) => ({
                addedAt: like.createdAt.toISOString(),

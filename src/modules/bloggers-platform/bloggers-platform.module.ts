@@ -3,11 +3,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Blog, BlogSchema } from './blogs/domain/blog.entity';
 import { BlogsRepository } from './blogs/infrastructure/blogs.repository';
 import { BlogsController } from './blogs/api/blogs.controller';
-import { BlogsService } from './blogs/application/blogs.service';
 import { BlogsQueryRepository } from './blogs/infrastructure/query/blogs.query-repository';
 import { Post, PostSchema } from './posts/domain/post.entity';
 import { PostsRepository } from './posts/infrastructure/posts.repository';
-import { PostsService } from './posts/application/posts.service';
 import { Like, LikeSchema } from './likes/domain/like.entity';
 import { LikesQueryRepository } from './likes/infrastructure/query/likes.query-repository';
 import { PostsQueryRepository } from './posts/infrastructure/query/posts.query-repository';
@@ -17,11 +15,23 @@ import { CommentsRepository } from './comments/infrastructure/comments.repositor
 import { Comment, CommentSchema } from './comments/domain/comment.entity';
 import { CommentsQueryRepository } from './comments/infrastructure/query/comments.query-repository';
 import { UserAccountsModule } from '../user-accounts/user-accounts.module';
-//import { CommentsService } from './comments/application/comments.service';
 import { CommentsController } from './comments/api/comments.controller';
+import { CreateBlogUseCase } from './blogs/application/usecases/create-blog.usecase';
+import { UpdateBlogUseCase } from './blogs/application/usecases/update-blog.usecase';
+import { DeleteBlogUseCase } from './blogs/application/usecases/delete-blog.usecase';
+import { CreatePostUseCase } from './posts/application/usecases/create-post.usecase';
+import { UpdatePostUseCase } from './posts/application/usecases/update-post.usecase';
+import { DeletePostUseCase } from './posts/application/usecases/delete-post.usecase';
+import { CreateCommentUseCase } from './comments/application/usecases/create-comment.usecase';
+import { PassportModule } from '@nestjs/passport';
+import { UpdateCommentUseCase } from './comments/application/usecases/update-comment.usecase';
+import { DeleteCommentUseCase } from './comments/application/usecases/delete-comment.usecase';
 
 @Module({
    imports: [
+      PassportModule.register({
+         session: false,
+      }),
       UserAccountsModule,
 
       MongooseModule.forFeature([
@@ -45,17 +55,24 @@ import { CommentsController } from './comments/api/comments.controller';
    ],
    controllers: [BlogsController, PostsController, CommentsController],
    providers: [
-      BlogsService,
       BlogsRepository,
       BlogsQueryRepository,
-      PostsService,
       PostsRepository,
       PostsQueryRepository,
       LikesRepository,
       LikesQueryRepository,
-      //CommentsService,
       CommentsRepository,
       CommentsQueryRepository,
+
+      CreateBlogUseCase,
+      UpdateBlogUseCase,
+      DeleteBlogUseCase,
+      CreatePostUseCase,
+      UpdatePostUseCase,
+      DeletePostUseCase,
+      CreateCommentUseCase,
+      UpdateCommentUseCase,
+      DeleteCommentUseCase,
    ],
 })
 export class BloggersPlatformModule {}
