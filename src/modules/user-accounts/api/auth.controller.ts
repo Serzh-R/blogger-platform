@@ -8,6 +8,7 @@ import {
    Res,
    UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { LocalAuthGuard } from '../guards/local/local-auth.guard';
 import { ExtractUserFromRequest } from '../guards/decorators/param/extract-user-from-request.decorator';
 import type { UserContextDto } from '../guards/dto/user-context.dto';
@@ -26,7 +27,6 @@ import { ResendRegistrationEmailCommand } from '../application/usecases/resend-r
 import { PasswordRecoveryCommand } from '../application/usecases/password-recovery.usecase';
 import { SetNewPasswordCommand } from '../application/usecases/set-new-password.usecase';
 import { LoginUserCommand } from '../application/usecases/login-user.usecase';
-import type { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -88,18 +88,18 @@ export class AuthController {
       @ExtractUserFromRequest() user: UserContextDto,
       @Res({ passthrough: true }) response: Response,
    ): Promise<{ accessToken: string }> {
-      const result = await this.commandBus.execute<
+      const { accessToken, refreshToken } = await this.commandBus.execute<
          LoginUserCommand,
-         { accessToken: string }
+         { accessToken: string; refreshToken: string }
       >(new LoginUserCommand(user.id));
 
-      response.cookie('refreshToken', 'refresh-token-stub', {
+      response.cookie('refreshToken', refreshToken, {
          httpOnly: true,
-         secure: false,
+         secure: true,
          sameSite: 'lax',
       });
 
-      return result;
+      return { accessToken };
    }
 
    @Get('me')

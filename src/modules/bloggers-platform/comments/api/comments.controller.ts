@@ -19,6 +19,10 @@ import { ExtractUserFromRequest } from '../../../user-accounts/guards/decorators
 import { UserContextDto } from '../../../user-accounts/guards/dto/user-context.dto';
 import { UpdateCommentCommand } from '../application/usecases/update-comment.usecase';
 import { DeleteCommentCommand } from '../application/usecases/delete-comment.usecase';
+import { UpdateLikeStatusInputDto } from '../../likes/api/input-dto/update-like-status.input-dto';
+import { UpdateCommentLikeStatusCommand } from '../application/usecases/update-comment-like-status.usecase';
+import { OptionalJwtAuthGuard } from '../../../user-accounts/guards/bearer/optional-jwt-auth.guard';
+import { ExtractUserFromRequestOrNull } from '../../../user-accounts/guards/decorators/param/extract-user-from-request-or-null.decorator';
 
 @Controller('comments')
 export class CommentsController {
@@ -28,8 +32,15 @@ export class CommentsController {
    ) {}
 
    @Get(':id')
-   async getById(@Param('id') id: string): Promise<CommentViewDto> {
-      const comment = await this.commentsQueryRepository.findById(id);
+   @UseGuards(OptionalJwtAuthGuard)
+   async getById(
+      @Param('id') id: string,
+      @ExtractUserFromRequestOrNull() user: UserContextDto | null,
+   ): Promise<CommentViewDto> {
+      const comment = await this.commentsQueryRepository.findById(
+         id,
+         user?.id ?? null,
+      );
 
       if (!comment) {
          throw new NotFoundException('Comment not found');
@@ -51,6 +62,23 @@ export class CommentsController {
             content: body.content,
             userId: user.id,
          }),
+      );
+   }
+
+   @Put(':commentId/like-status')
+   @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(JwtAuthGuard)
+   async updateCommentLikeStatus(
+      @Param('commentId') commentId: string,
+      @Body() body: UpdateLikeStatusInputDto,
+      @ExtractUserFromRequest() user: UserContextDto,
+   ): Promise<void> {
+      await this.commandBus.execute<UpdateCommentLikeStatusCommand, void>(
+         new UpdateCommentLikeStatusCommand(
+            commentId,
+            user.id,
+            body.likeStatus,
+         ),
       );
    }
 

@@ -26,6 +26,8 @@ import { CreateCommentUseCase } from './comments/application/usecases/create-com
 import { PassportModule } from '@nestjs/passport';
 import { UpdateCommentUseCase } from './comments/application/usecases/update-comment.usecase';
 import { DeleteCommentUseCase } from './comments/application/usecases/delete-comment.usecase';
+import { UpdatePostLikeStatusUseCase } from './posts/application/usecases/update-post-like-status.usecase';
+import { UpdateCommentLikeStatusUseCase } from './comments/application/usecases/update-comment-like-status.usecase';
 
 @Module({
    imports: [
@@ -73,6 +75,8 @@ import { DeleteCommentUseCase } from './comments/application/usecases/delete-com
       CreateCommentUseCase,
       UpdateCommentUseCase,
       DeleteCommentUseCase,
+      UpdatePostLikeStatusUseCase,
+      UpdateCommentLikeStatusUseCase,
    ],
 })
 export class BloggersPlatformModule {}

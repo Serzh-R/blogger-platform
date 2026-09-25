@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument, Model } from 'mongoose';
 import type { CreatePostDomainDto } from './dto/create-post.domain-dto';
 import { UpdatePostDomainDto } from './dto/update-post.domain-dto';
+import { LikeStatus } from '../../likes/domain/like-status.enum';
 
 @Schema({
    collection: 'posts',
@@ -53,6 +54,28 @@ export class Post {
       this.content = dto.content;
       this.blogId = dto.blogId;
       this.blogName = dto.blogName;
+   }
+
+   updateLikeCounters(previousStatus: LikeStatus, newStatus: LikeStatus): void {
+      if (previousStatus === newStatus) {
+         return;
+      }
+
+      if (previousStatus === LikeStatus.Like) {
+         this.likesCount -= 1;
+      }
+
+      if (previousStatus === LikeStatus.Dislike) {
+         this.dislikesCount -= 1;
+      }
+
+      if (newStatus === LikeStatus.Like) {
+         this.likesCount += 1;
+      }
+
+      if (newStatus === LikeStatus.Dislike) {
+         this.dislikesCount += 1;
+      }
    }
 }
 

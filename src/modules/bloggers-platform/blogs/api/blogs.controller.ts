@@ -11,7 +11,9 @@ import {
    Post,
    Put,
    Query,
+   UseGuards,
 } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { BlogsQueryRepository } from '../infrastructure/query/blogs.query-repository';
 import { BlogViewDto } from './view-dto/blog.view-dto';
 import { GetBlogsQueryParams } from './input-dto/get-blogs-query-params.input-dto';
@@ -22,11 +24,14 @@ import { PostsQueryRepository } from '../../posts/infrastructure/query/posts.que
 import { CreateBlogPostInputDto } from './input-dto/create-blog-post.input-dto';
 import { PostViewDto } from '../../posts/api/view-dto/post.view-dto';
 import { GetPostsQueryParams } from '../../posts/api/input-dto/get-posts-query-params.input-dto';
-import { CommandBus } from '@nestjs/cqrs';
 import { CreateBlogCommand } from '../application/usecases/create-blog.usecase';
 import { UpdateBlogCommand } from '../application/usecases/update-blog.usecase';
 import { DeleteBlogCommand } from '../application/usecases/delete-blog.usecase';
 import { CreatePostCommand } from '../../posts/application/usecases/create-post.usecase';
+import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.guard';
+import { OptionalJwtAuthGuard } from '../../../user-accounts/guards/bearer/optional-jwt-auth.guard';
+import { ExtractUserFromRequestOrNull } from '../../../user-accounts/guards/decorators/param/extract-user-from-request-or-null.decorator';
+import { UserContextDto } from '../../../user-accounts/guards/dto/user-context.dto';
 
 @Controller('blogs')
 export class BlogsController {
@@ -55,9 +60,11 @@ export class BlogsController {
    }
 
    @Get(':blogId/posts')
+   @UseGuards(OptionalJwtAuthGuard)
    async getPosts(
       @Param('blogId') blogId: string,
       @Query() query: GetPostsQueryParams,
+      @ExtractUserFromRequestOrNull() user: UserContextDto | null,
    ): Promise<PaginatedViewDto<PostViewDto>> {
       const blog = await this.blogsQueryRepository.findById(blogId);
 
@@ -65,10 +72,15 @@ export class BlogsController {
          throw new NotFoundException('Blog not found');
       }
 
-      return this.postsQueryRepository.findAll(query, blog.id);
+      return this.postsQueryRepository.findAll(
+         query,
+         blog.id,
+         user?.id ?? null,
+      );
    }
 
    @Post()
+   @UseGuards(BasicAuthGuard)
    async createBlog(@Body() body: CreateBlogInputDto): Promise<BlogViewDto> {
       const blogId = await this.commandBus.execute<CreateBlogCommand, string>(
          new CreateBlogCommand(body),
@@ -84,6 +96,7 @@ export class BlogsController {
    }
 
    @Post(':blogId/posts')
+   @UseGuards(BasicAuthGuard)
    async createPost(
       @Param('blogId') blogId: string,
       @Body() body: CreateBlogPostInputDto,
@@ -114,6 +127,7 @@ export class BlogsController {
 
    @Put(':id')
    @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(BasicAuthGuard)
    async updateBlog(
       @Param('id') id: string,
       @Body() body: UpdateBlogInputDto,
@@ -125,6 +139,7 @@ export class BlogsController {
 
    @Delete(':id')
    @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(BasicAuthGuard)
    async deleteBlog(@Param('id') id: string): Promise<void> {
       await this.commandBus.execute<DeleteBlogCommand, void>(
          new DeleteBlogCommand(id),

@@ -24,7 +24,6 @@ export class RegisterUserUseCase implements ICommandHandler<
       const user = await this.usersFactory.create(dto);
 
       const confirmationCode = randomUUID();
-
       const expirationDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       user.setConfirmationCode(confirmationCode, expirationDate);

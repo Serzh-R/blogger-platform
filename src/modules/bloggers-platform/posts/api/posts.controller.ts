@@ -13,6 +13,7 @@ import {
    Query,
    UseGuards,
 } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
 import { PostsQueryRepository } from '../infrastructure/query/posts.query-repository';
 import { PostViewDto } from './view-dto/post.view-dto';
 import { GetPostsQueryParams } from './input-dto/get-posts-query-params.input-dto';
@@ -22,15 +23,19 @@ import { UpdatePostInputDto } from './input-dto/update-post.input-dto';
 import { CommentsQueryRepository } from '../../comments/infrastructure/query/comments.query-repository';
 import { GetCommentsQueryParams } from '../../comments/api/input-dto/get-comments-query-params.input-dto';
 import { CommentViewDto } from '../../comments/api/view-dto/comment.view-dto';
-import { CommandBus } from '@nestjs/cqrs';
 import { CreatePostCommand } from '../application/usecases/create-post.usecase';
 import { UpdatePostCommand } from '../application/usecases/update-post.usecase';
 import { DeletePostCommand } from '../application/usecases/delete-post.usecase';
+import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.guard';
 import { JwtAuthGuard } from '../../../user-accounts/guards/bearer/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../../user-accounts/guards/bearer/optional-jwt-auth.guard';
 import { CreateCommentInputDto } from '../../comments/api/input-dto/create-comment.input-dto';
 import { ExtractUserFromRequest } from '../../../user-accounts/guards/decorators/param/extract-user-from-request.decorator';
+import { ExtractUserFromRequestOrNull } from '../../../user-accounts/guards/decorators/param/extract-user-from-request-or-null.decorator';
 import { UserContextDto } from '../../../user-accounts/guards/dto/user-context.dto';
 import { CreateCommentCommand } from '../../comments/application/usecases/create-comment.usecase';
+import { UpdateLikeStatusInputDto } from '../../likes/api/input-dto/update-like-status.input-dto';
+import { UpdatePostLikeStatusCommand } from '../application/usecases/update-post-like-status.usecase';
 
 @Controller('posts')
 export class PostsController {
@@ -41,15 +46,28 @@ export class PostsController {
    ) {}
 
    @Get()
+   @UseGuards(OptionalJwtAuthGuard)
    async getAll(
       @Query() query: GetPostsQueryParams,
+      @ExtractUserFromRequestOrNull() user: UserContextDto | null,
    ): Promise<PaginatedViewDto<PostViewDto>> {
-      return this.postsQueryRepository.findAll(query);
+      return this.postsQueryRepository.findAll(
+         query,
+         undefined,
+         user?.id ?? null,
+      );
    }
 
    @Get(':id')
-   async getById(@Param('id') id: string): Promise<PostViewDto> {
-      const post = await this.postsQueryRepository.findById(id);
+   @UseGuards(OptionalJwtAuthGuard)
+   async getById(
+      @Param('id') id: string,
+      @ExtractUserFromRequestOrNull() user: UserContextDto | null,
+   ): Promise<PostViewDto> {
+      const post = await this.postsQueryRepository.findById(
+         id,
+         user?.id ?? null,
+      );
 
       if (!post) {
          throw new NotFoundException('Post not found');
@@ -59,9 +77,11 @@ export class PostsController {
    }
 
    @Get(':postId/comments')
+   @UseGuards(OptionalJwtAuthGuard)
    async getComments(
       @Param('postId') postId: string,
       @Query() query: GetCommentsQueryParams,
+      @ExtractUserFromRequestOrNull() user: UserContextDto | null,
    ): Promise<PaginatedViewDto<CommentViewDto>> {
       const post = await this.postsQueryRepository.findById(postId);
 
@@ -69,7 +89,11 @@ export class PostsController {
          throw new NotFoundException('Post not found');
       }
 
-      return this.commentsQueryRepository.findCommentsByPostId(post.id, query);
+      return this.commentsQueryRepository.findCommentsByPostId(
+         post.id,
+         query,
+         user?.id ?? null,
+      );
    }
 
    @Post(':postId/comments')
@@ -100,6 +124,7 @@ export class PostsController {
    }
 
    @Post()
+   @UseGuards(BasicAuthGuard)
    async createPost(@Body() body: CreatePostInputDto): Promise<PostViewDto> {
       const postId = await this.commandBus.execute<CreatePostCommand, string>(
          new CreatePostCommand(body),
@@ -116,6 +141,7 @@ export class PostsController {
 
    @Put(':id')
    @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(BasicAuthGuard)
    async updatePost(
       @Param('id') id: string,
       @Body() body: UpdatePostInputDto,
@@ -125,8 +151,22 @@ export class PostsController {
       );
    }
 
+   @Put(':postId/like-status')
+   @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(JwtAuthGuard)
+   async updatePostLikeStatus(
+      @Param('postId') postId: string,
+      @Body() body: UpdateLikeStatusInputDto,
+      @ExtractUserFromRequest() user: UserContextDto,
+   ): Promise<void> {
+      await this.commandBus.execute<UpdatePostLikeStatusCommand, void>(
+         new UpdatePostLikeStatusCommand(postId, user.id, body.likeStatus),
+      );
+   }
+
    @Delete(':id')
    @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(BasicAuthGuard)
    async deletePost(@Param('id') id: string): Promise<void> {
       await this.commandBus.execute<DeletePostCommand, void>(
          new DeletePostCommand(id),

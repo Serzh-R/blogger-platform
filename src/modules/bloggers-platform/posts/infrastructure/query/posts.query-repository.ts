@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { QueryFilter, Types } from 'mongoose';
 import { LikesQueryRepository } from '../../../likes/infrastructure/query/likes.query-repository';
+import { LikeStatus } from '../../../likes/domain/like-status.enum';
 import { PostViewDto } from '../../api/view-dto/post.view-dto';
 import { Post } from '../../domain/post.entity';
 import type { PostModelType } from '../../domain/post.entity';
@@ -16,7 +17,10 @@ export class PostsQueryRepository {
       private readonly likesQueryRepository: LikesQueryRepository,
    ) {}
 
-   async findById(id: string): Promise<PostViewDto | null> {
+   async findById(
+      id: string,
+      userId: string | null = null,
+   ): Promise<PostViewDto | null> {
       if (!Types.ObjectId.isValid(id)) {
          return null;
       }
@@ -27,10 +31,15 @@ export class PostsQueryRepository {
          return null;
       }
 
+      const postId = post._id.toString();
+
+      const myStatusesMap = await this.likesQueryRepository.findMyStatuses(
+         [postId],
+         userId,
+      );
+
       const likes =
-         await this.likesQueryRepository.findThreeNewestLikesByPostId(
-            post._id.toString(),
-         );
+         await this.likesQueryRepository.findThreeNewestLikesByPostId(postId);
 
       const newestLikes = likes.map((like) => ({
          addedAt: like.createdAt.toISOString(),
@@ -38,12 +47,17 @@ export class PostsQueryRepository {
          login: like.authorLogin,
       }));
 
-      return PostViewDto.mapToView(post, newestLikes);
+      return PostViewDto.mapToView(
+         post,
+         newestLikes,
+         myStatusesMap.get(postId) ?? LikeStatus.None,
+      );
    }
 
    async findAll(
       query: GetPostsQueryParams,
       blogId?: string,
+      userId: string | null = null,
    ): Promise<PaginatedViewDto<PostViewDto>> {
       const filter: QueryFilter<Post> = {};
 
@@ -52,20 +66,28 @@ export class PostsQueryRepository {
       }
 
       const [totalCount, posts] = await Promise.all([
-         this.PostModel.countDocuments(filter).exec(),
+         this.PostModel.countDocuments(filter),
 
          this.PostModel.find(filter)
             .sort({ [query.sortBy]: query.sortDirection })
             .skip(query.calculateSkip())
-            .limit(query.pageSize)
-            .exec(),
+            .limit(query.pageSize),
       ]);
+
+      const postIds = posts.map((post) => post._id.toString());
+
+      const myStatusesMap = await this.likesQueryRepository.findMyStatuses(
+         postIds,
+         userId,
+      );
 
       const items = await Promise.all(
          posts.map(async (post): Promise<PostViewDto> => {
+            const postId = post._id.toString();
+
             const likes =
                await this.likesQueryRepository.findThreeNewestLikesByPostId(
-                  post._id.toString(),
+                  postId,
                );
 
             const newestLikes = likes.map((like) => ({
@@ -74,7 +96,11 @@ export class PostsQueryRepository {
                login: like.authorLogin,
             }));
 
-            return PostViewDto.mapToView(post, newestLikes);
+            return PostViewDto.mapToView(
+               post,
+               newestLikes,
+               myStatusesMap.get(postId) ?? LikeStatus.None,
+            );
          }),
       );
 
