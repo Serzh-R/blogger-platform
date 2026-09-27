@@ -54,7 +54,7 @@ export class PostsController {
       return this.postsQueryRepository.findAll(
          query,
          undefined,
-         user?.id ?? null,
+         user?.userId ?? null,
       );
    }
 
@@ -66,7 +66,7 @@ export class PostsController {
    ): Promise<PostViewDto> {
       const post = await this.postsQueryRepository.findById(
          id,
-         user?.id ?? null,
+         user?.userId ?? null,
       );
 
       if (!post) {
@@ -92,7 +92,7 @@ export class PostsController {
       return this.commentsQueryRepository.findCommentsByPostId(
          post.id,
          query,
-         user?.id ?? null,
+         user?.userId ?? null,
       );
    }
 
@@ -110,7 +110,7 @@ export class PostsController {
          new CreateCommentCommand({
             content: body.content,
             postId,
-            userId: user.id,
+            userId: user.userId,
          }),
       );
 
@@ -160,7 +160,7 @@ export class PostsController {
       @ExtractUserFromRequest() user: UserContextDto,
    ): Promise<void> {
       await this.commandBus.execute<UpdatePostLikeStatusCommand, void>(
-         new UpdatePostLikeStatusCommand(postId, user.id, body.likeStatus),
+         new UpdatePostLikeStatusCommand(postId, user.userId, body.likeStatus),
       );
    }
 

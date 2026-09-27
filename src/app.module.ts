@@ -3,17 +3,25 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserAccountsModule } from './modules/user-accounts/user-accounts.module';
 import { MongooseModule } from '@nestjs/mongoose';
-import { SETTINGS } from './core/settings';
 import { BloggersPlatformModule } from './modules/bloggers-platform/bloggers-platform.module';
 import { TestingModule } from './modules/testing/testing.module';
 import { CqrsModule } from '@nestjs/cqrs';
+import { configModule } from './config-dynamic-module';
+import { CoreModule } from './core/core.module';
+import { CoreConfig } from './core/core.config';
 
 @Module({
    imports: [
+      configModule,
+      CoreModule,
       CqrsModule.forRoot(),
 
-      MongooseModule.forRoot(SETTINGS.MONGO_URL, {
-         dbName: SETTINGS.DB_NAME,
+      MongooseModule.forRootAsync({
+         useFactory: (coreConfig: CoreConfig) => ({
+            uri: coreConfig.mongoUrl,
+            dbName: coreConfig.dbName,
+         }),
+         inject: [CoreConfig],
       }),
       UserAccountsModule,
       BloggersPlatformModule,

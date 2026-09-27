@@ -39,7 +39,7 @@ export class CommentsController {
    ): Promise<CommentViewDto> {
       const comment = await this.commentsQueryRepository.findById(
          id,
-         user?.id ?? null,
+         user?.userId ?? null,
       );
 
       if (!comment) {
@@ -60,7 +60,7 @@ export class CommentsController {
       await this.commandBus.execute<UpdateCommentCommand, void>(
          new UpdateCommentCommand(commentId, {
             content: body.content,
-            userId: user.id,
+            userId: user.userId,
          }),
       );
    }
@@ -76,7 +76,7 @@ export class CommentsController {
       await this.commandBus.execute<UpdateCommentLikeStatusCommand, void>(
          new UpdateCommentLikeStatusCommand(
             commentId,
-            user.id,
+            user.userId,
             body.likeStatus,
          ),
       );
@@ -90,7 +90,7 @@ export class CommentsController {
       @ExtractUserFromRequest() user: UserContextDto,
    ): Promise<void> {
       await this.commandBus.execute<DeleteCommentCommand, void>(
-         new DeleteCommentCommand(commentId, user.id),
+         new DeleteCommentCommand(commentId, user.userId),
       );
    }
 }

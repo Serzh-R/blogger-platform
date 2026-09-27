@@ -8,7 +8,6 @@ import { UsersQueryRepository } from './infrastructure/query/users.query-reposit
 import { AuthService } from './application/auth.service';
 import { LocalStrategy } from './guards/local/local.strategy';
 import { JwtModule } from '@nestjs/jwt';
-import { SETTINGS } from '../../core/settings';
 import { AuthController } from './api/auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './guards/bearer/jwt.strategy';
@@ -23,6 +22,12 @@ import { ResendRegistrationEmailUseCase } from './application/usecases/resend-re
 import { PasswordRecoveryUseCase } from './application/usecases/password-recovery.usecase';
 import { SetNewPasswordUseCase } from './application/usecases/set-new-password.usecase';
 import { LoginUserUseCase } from './application/usecases/login-user.usecase';
+import { UserAccountsConfig } from './config/user-accounts.config';
+import {
+   DeviceSession,
+   DeviceSessionSchema,
+} from './domain/device-session.entity';
+import { DeviceSessionsRepository } from './infrastructure/device-sessions.repository';
 
 @Module({
    imports: [
@@ -34,17 +39,17 @@ import { LoginUserUseCase } from './application/usecases/login-user.usecase';
             name: User.name,
             schema: UserSchema,
          },
-      ]),
-      JwtModule.register({
-         secret: SETTINGS.JWT_ACCESS_SECRET,
-         signOptions: {
-            expiresIn: '5m',
+         {
+            name: DeviceSession.name,
+            schema: DeviceSessionSchema,
          },
-      }),
+      ]),
+      JwtModule.register({}),
       NotificationsModule,
    ],
    controllers: [UsersController, AuthController],
    providers: [
+      UserAccountsConfig,
       UsersRepository,
       UsersQueryRepository,
       UsersFactory,
@@ -53,6 +58,7 @@ import { LoginUserUseCase } from './application/usecases/login-user.usecase';
       LocalStrategy,
       JwtStrategy,
       AuthQueryRepository,
+      DeviceSessionsRepository,
 
       CreateUserUseCase,
       DeleteUserUseCase,

@@ -5,10 +5,11 @@ import {
    HttpCode,
    HttpStatus,
    Post,
+   Req,
    Res,
    UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { LocalAuthGuard } from '../guards/local/local-auth.guard';
 import { ExtractUserFromRequest } from '../guards/decorators/param/extract-user-from-request.decorator';
 import type { UserContextDto } from '../guards/dto/user-context.dto';
@@ -86,12 +87,19 @@ export class AuthController {
    @UseGuards(LocalAuthGuard)
    async login(
       @ExtractUserFromRequest() user: UserContextDto,
+      @Req() request: Request,
       @Res({ passthrough: true }) response: Response,
    ): Promise<{ accessToken: string }> {
       const { accessToken, refreshToken } = await this.commandBus.execute<
          LoginUserCommand,
          { accessToken: string; refreshToken: string }
-      >(new LoginUserCommand(user.id));
+      >(
+         new LoginUserCommand(
+            user.userId,
+            request.ip ?? 'Unknown IP',
+            request.get('user-agent') ?? 'Unknown device',
+         ),
+      );
 
       response.cookie('refreshToken', refreshToken, {
          httpOnly: true,
@@ -105,6 +113,6 @@ export class AuthController {
    @Get('me')
    @UseGuards(JwtAuthGuard)
    me(@ExtractUserFromRequest() user: UserContextDto): Promise<MeViewDto> {
-      return this.authQueryRepository.me(user.id);
+      return this.authQueryRepository.me(user.userId);
    }
 }

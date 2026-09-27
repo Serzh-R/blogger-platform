@@ -75,7 +75,7 @@ export class BlogsController {
       return this.postsQueryRepository.findAll(
          query,
          blog.id,
-         user?.id ?? null,
+         user?.userId ?? null,
       );
    }
 

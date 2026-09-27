@@ -1,3 +1,3 @@
 export class UserContextDto {
-   id: string;
+   userId: string;
 }

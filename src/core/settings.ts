@@ -8,12 +8,6 @@ if (!mongoUrl) {
    throw new Error('MONGO_URL is not defined');
 }
 
-const jwtAccessSecret = process.env.JWT_ACCESS_SECRET;
-
-if (!jwtAccessSecret) {
-   throw new Error('JWT_ACCESS_SECRET is not defined');
-}
-
 const smtpHost = process.env.SMTP_HOST;
 
 if (!smtpHost) {
@@ -41,10 +35,6 @@ if (!smtpPassword) {
 const smtpFrom = process.env.SMTP_FROM || smtpUser;
 
 export const SETTINGS = {
-   MONGO_URL: mongoUrl,
-   DB_NAME: process.env.DB_NAME || 'blogger_platform_nest',
-
-   JWT_ACCESS_SECRET: jwtAccessSecret,
 
    SMTP: {
       HOST: smtpHost,
