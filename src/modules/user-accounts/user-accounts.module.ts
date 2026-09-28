@@ -28,6 +28,13 @@ import {
    DeviceSessionSchema,
 } from './domain/device-session.entity';
 import { DeviceSessionsRepository } from './infrastructure/device-sessions.repository';
+import { RefreshTokenStrategy } from './guards/refresh/refresh-token.strategy';
+import { RefreshTokenUseCase } from './application/usecases/refresh-token.usecase';
+import { LogoutUserUseCase } from './application/usecases/logout-user.usecase';
+import { SecurityDevicesController } from './api/security-devices.controller';
+import { SecurityDevicesQueryRepository } from './infrastructure/query/security-devices.query-repository';
+import { DeleteOtherDevicesUseCase } from './application/usecases/delete-other-devices.usecase';
+import { DeleteDeviceByIdUseCase } from './application/usecases/delete-device-by-id.usecase';
 
 @Module({
    imports: [
@@ -47,7 +54,7 @@ import { DeviceSessionsRepository } from './infrastructure/device-sessions.repos
       JwtModule.register({}),
       NotificationsModule,
    ],
-   controllers: [UsersController, AuthController],
+   controllers: [UsersController, AuthController, SecurityDevicesController],
    providers: [
       UserAccountsConfig,
       UsersRepository,
@@ -57,8 +64,10 @@ import { DeviceSessionsRepository } from './infrastructure/device-sessions.repos
       AuthService,
       LocalStrategy,
       JwtStrategy,
+      RefreshTokenStrategy,
       AuthQueryRepository,
       DeviceSessionsRepository,
+      SecurityDevicesQueryRepository,
 
       CreateUserUseCase,
       DeleteUserUseCase,
@@ -68,6 +77,10 @@ import { DeviceSessionsRepository } from './infrastructure/device-sessions.repos
       PasswordRecoveryUseCase,
       SetNewPasswordUseCase,
       LoginUserUseCase,
+      RefreshTokenUseCase,
+      LogoutUserUseCase,
+      DeleteOtherDevicesUseCase,
+      DeleteDeviceByIdUseCase,
    ],
 
    exports: [UsersRepository],

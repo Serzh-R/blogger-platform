@@ -28,6 +28,10 @@ import { ResendRegistrationEmailCommand } from '../application/usecases/resend-r
 import { PasswordRecoveryCommand } from '../application/usecases/password-recovery.usecase';
 import { SetNewPasswordCommand } from '../application/usecases/set-new-password.usecase';
 import { LoginUserCommand } from '../application/usecases/login-user.usecase';
+import { RefreshTokenCommand } from '../application/usecases/refresh-token.usecase';
+import { RefreshTokenGuard } from '../guards/refresh/refresh-token.guard';
+import { LogoutUserCommand } from '../application/usecases/logout-user.usecase';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -38,6 +42,7 @@ export class AuthController {
 
    @Post('registration')
    @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(ThrottlerGuard)
    async registration(@Body() body: CreateUserInputDto): Promise<void> {
       await this.commandBus.execute<RegisterUserCommand, void>(
          new RegisterUserCommand(body),
@@ -46,6 +51,7 @@ export class AuthController {
 
    @Post('registration-confirmation')
    @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(ThrottlerGuard)
    async registrationConfirmation(
       @Body() body: RegistrationConfirmationInputDto,
    ): Promise<void> {
@@ -56,6 +62,7 @@ export class AuthController {
 
    @Post('registration-email-resending')
    @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(ThrottlerGuard)
    async registrationEmailResending(
       @Body() body: RegistrationEmailResendingInputDto,
    ): Promise<void> {
@@ -66,6 +73,7 @@ export class AuthController {
 
    @Post('new-password')
    @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(ThrottlerGuard)
    async setNewPassword(@Body() dto: NewPasswordInputDto): Promise<void> {
       await this.commandBus.execute<SetNewPasswordCommand, void>(
          new SetNewPasswordCommand(dto),
@@ -74,6 +82,7 @@ export class AuthController {
 
    @Post('password-recovery')
    @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(ThrottlerGuard)
    async passwordRecovery(
       @Body() dto: PasswordRecoveryInputDto,
    ): Promise<void> {
@@ -84,7 +93,7 @@ export class AuthController {
 
    @Post('login')
    @HttpCode(HttpStatus.OK)
-   @UseGuards(LocalAuthGuard)
+   @UseGuards(ThrottlerGuard, LocalAuthGuard)
    async login(
       @ExtractUserFromRequest() user: UserContextDto,
       @Req() request: Request,
@@ -108,6 +117,56 @@ export class AuthController {
       });
 
       return { accessToken };
+   }
+
+   @Post('refresh-token')
+   @HttpCode(HttpStatus.OK)
+   @UseGuards(RefreshTokenGuard)
+   async refreshToken(
+      @Req()
+      request: Request & {
+         user: {
+            userId: string;
+            deviceId: string;
+         };
+      },
+      @Res({ passthrough: true }) response: Response,
+   ): Promise<{ accessToken: string }> {
+      const { accessToken, refreshToken } = await this.commandBus.execute<
+         RefreshTokenCommand,
+         { accessToken: string; refreshToken: string }
+      >(new RefreshTokenCommand(request.user.userId, request.user.deviceId));
+
+      response.cookie('refreshToken', refreshToken, {
+         httpOnly: true,
+         secure: true,
+         sameSite: 'lax',
+      });
+
+      return { accessToken };
+   }
+
+   @Post('logout')
+   @HttpCode(HttpStatus.NO_CONTENT)
+   @UseGuards(RefreshTokenGuard)
+   async logout(
+      @Req()
+      request: Request & {
+         user: {
+            deviceId: string;
+         };
+      },
+      @Res({ passthrough: true }) response: Response,
+   ): Promise<void> {
+      await this.commandBus.execute<LogoutUserCommand, void>(
+         new LogoutUserCommand(request.user.deviceId),
+      );
+
+      response.clearCookie('refreshToken', {
+         httpOnly: true,
+         secure: true,
+         sameSite: 'lax',
+      });
    }
 
    @Get('me')

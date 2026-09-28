@@ -22,4 +22,20 @@ export class DeviceSessionsRepository {
    async save(session: DeviceSessionDocument): Promise<void> {
       await session.save();
    }
+
+   async deleteByDeviceId(deviceId: string): Promise<boolean> {
+      const result = await this.DeviceSessionModel.deleteOne({ deviceId });
+
+      return result.deletedCount === 1;
+   }
+
+   async deleteOtherSessions(
+      userId: string,
+      currentDeviceId: string,
+   ): Promise<void> {
+      await this.DeviceSessionModel.deleteMany({
+         userId,
+         deviceId: { $ne: currentDeviceId },
+      });
+   }
 }

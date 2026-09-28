@@ -9,12 +9,20 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { configModule } from './config-dynamic-module';
 import { CoreModule } from './core/core.module';
 import { CoreConfig } from './core/core.config';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
    imports: [
       configModule,
       CoreModule,
       CqrsModule.forRoot(),
+
+      ThrottlerModule.forRoot([
+         {
+            ttl: 10_000,
+            limit: 5,
+         },
+      ]),
 
       MongooseModule.forRootAsync({
          useFactory: (coreConfig: CoreConfig) => ({
