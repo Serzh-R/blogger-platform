@@ -64,25 +64,29 @@ export class Comment {
       this.content = dto.content;
    }
 
-   updateLikeCounters(previousStatus: LikeStatus, newStatus: LikeStatus): void {
+   updateLikeCounters(
+      this: CommentDocument,
+      previousStatus: LikeStatus,
+      newStatus: LikeStatus,
+   ): void {
       if (previousStatus === newStatus) {
          return;
       }
 
       if (previousStatus === LikeStatus.Like) {
-         this.likesCount -= 1;
+         this.$inc('likesCount', -1);
       }
 
       if (previousStatus === LikeStatus.Dislike) {
-         this.dislikesCount -= 1;
+         this.$inc('dislikesCount', -1);
       }
 
       if (newStatus === LikeStatus.Like) {
-         this.likesCount += 1;
+         this.$inc('likesCount', 1);
       }
 
       if (newStatus === LikeStatus.Dislike) {
-         this.dislikesCount += 1;
+         this.$inc('dislikesCount', 1);
       }
    }
 }
