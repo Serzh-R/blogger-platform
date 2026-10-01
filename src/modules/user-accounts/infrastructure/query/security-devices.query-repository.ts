@@ -12,7 +12,10 @@ export class SecurityDevicesQueryRepository {
    ) {}
 
    async findAllByUserId(userId: string): Promise<DeviceSessionViewDto[]> {
-      const sessions = await this.DeviceSessionModel.find({ userId });
+      const sessions = await this.DeviceSessionModel.find({
+         userId,
+         expirationDate: { $gt: new Date() },
+      });
 
       return sessions.map((session) => DeviceSessionViewDto.mapToView(session));
    }

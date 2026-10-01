@@ -5,10 +5,10 @@ import { configValidationUtility } from '../setup/config-validation.utility';
 
 @Injectable()
 export class CoreConfig {
-   @IsNotEmpty({ message: 'Задайте переменную окружения MONGO_URL' })
+   @IsNotEmpty({ message: 'MONGO_URL is not defined' })
    mongoUrl: string;
 
-   @IsNotEmpty({ message: 'Задайте имя базы данных DB_NAME' })
+   @IsNotEmpty({ message: 'DB_NAME is not defined' })
    dbName: string;
 
    @IsNotEmpty({ message: 'SMTP_HOST is not defined' })
