@@ -1,13 +1,24 @@
 import { Test } from '@nestjs/testing';
+import type { TestingModuleBuilder } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { appSetup } from '../../src/setup/app.setup';
 import { UsersTestManager } from './users-test-manager';
 
-export const initSettings = async () => {
-   // Создаём тестовый модуль на основе модулей приложения.
-   const testingModule = await Test.createTestingModule({
+export const initSettings = async (
+   // ДОБАВЛЕНО: дополнительные настройки конкретного набора тестов.
+   addSettingsToModuleBuilder?: (moduleBuilder: TestingModuleBuilder) => void,
+) => {
+   // Создаём builder тестового модуля.
+   const testingModuleBuilder = Test.createTestingModule({
       imports: [AppModule],
-   }).compile();
+   });
+
+   // ДОБАВЛЕНО: применяем дополнительные настройки до компиляции.
+   if (addSettingsToModuleBuilder) {
+      addSettingsToModuleBuilder(testingModuleBuilder);
+   }
+
+   const testingModule = await testingModuleBuilder.compile();
 
    const app = testingModule.createNestApplication();
 
