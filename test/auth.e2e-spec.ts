@@ -622,6 +622,64 @@ describe('Auth (e2e)', () => {
       });
    });
 
+   describe('POST /api/auth/logout', () => {
+      it('signs out and rejects the refresh token after logout', async () => {
+         const input: CreateUserInputDto = {
+            login: 'testuser',
+            email: 'testuser@example.com',
+            password: 'Test12345',
+         };
+
+         await usersTestManager.createUser(input);
+
+         const loginResponse = await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/auth/login`)
+            .send({
+               loginOrEmail: input.login,
+               password: input.password,
+            })
+            .expect(200);
+
+         // Получаем refresh cookie из ответа на вход.
+         const loginCookies: unknown = loginResponse.headers['set-cookie'];
+
+         if (!Array.isArray(loginCookies)) {
+            throw new Error('Set-Cookie header must be an array');
+         }
+
+         const loginRefreshCookie = loginCookies.find((cookie: string) =>
+            cookie.startsWith('refreshToken='),
+         );
+
+         if (typeof loginRefreshCookie !== 'string') {
+            throw new Error('Refresh token cookie is missing');
+         }
+
+         // Сохраняем имя и значение cookie без атрибутов.
+         const cookieHeader = loginRefreshCookie.split(';')[0];
+
+         // Выходим и проверяем, что сервер очищает refresh cookie.
+         await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/auth/logout`)
+            .set('Cookie', cookieHeader)
+            .expect(204)
+            .expect('Set-Cookie', /^refreshToken=;/);
+
+         // Повторно отправляем прежний токен после выхода.
+         await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/auth/refresh-token`)
+            .set('Cookie', cookieHeader)
+            .expect(401);
+      });
+
+      it('returns 401 when the refresh token cookie is missing', async () => {
+         // Пытаемся выйти без cookie, определяющей сессию устройства.
+         await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/auth/logout`)
+            .expect(401);
+      });
+   });
+
    afterAll(async () => {
       if (app) {
          await app.close();
