@@ -6,13 +6,20 @@ import { deleteAllData } from './helpers/delete-all-data';
 import { initSettings } from './helpers/init-settings';
 import type { UpdateBlogInputDto } from '../src/modules/bloggers-platform/blogs/api/input-dto/update-blog.input-dto';
 import type { BlogViewDto } from '../src/modules/bloggers-platform/blogs/api/view-dto/blog.view-dto';
+import type { CreatePostInputDto } from '../src/modules/bloggers-platform/posts/api/input-dto/create-post.input-dto';
+import type { CreateCommentInputDto } from '../src/modules/bloggers-platform/comments/api/input-dto/create-comment.input-dto';
+import type { CreateUserInputDto } from '../src/modules/user-accounts/api/input-dto/create-user.input-dto';
+import { UsersTestManager } from './helpers/users-test-manager';
 
 describe('Blogs (e2e)', () => {
    let app: INestApplication;
+   let usersTestManager: UsersTestManager;
 
    beforeAll(async () => {
       const settings = await initSettings();
+
       app = settings.app;
+      usersTestManager = settings.usersTestManager;
    });
 
    beforeEach(async () => {
@@ -315,6 +322,159 @@ describe('Blogs (e2e)', () => {
             totalCount: 1,
             items: [expectedMatchingBlog],
          });
+      });
+   });
+
+   describe('Posts and comments after blog deletion', () => {
+      it('deletes blog descendants and preserves another blog data', async () => {
+         const userInput: CreateUserInputDto = {
+            login: 'author',
+            email: 'author@example.com',
+            password: 'Test12345',
+         };
+
+         await usersTestManager.createUser(userInput);
+
+         const firstBlogInput: CreateBlogInputDto = {
+            name: 'Backend blog',
+            description: 'A blog about backend development',
+            websiteUrl: 'https://backend.example.com',
+         };
+
+         const secondBlogInput: CreateBlogInputDto = {
+            name: 'Frontend blog',
+            description: 'A blog about frontend development',
+            websiteUrl: 'https://frontend.example.com',
+         };
+
+         // Создаём два независимых блога.
+         const createFirstBlogResponse = await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/blogs`)
+            .auth('admin', 'qwerty')
+            .send(firstBlogInput)
+            .expect(201);
+
+         const firstBlogId = createFirstBlogResponse.body.id;
+
+         const createSecondBlogResponse = await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/blogs`)
+            .auth('admin', 'qwerty')
+            .send(secondBlogInput)
+            .expect(201);
+
+         const secondBlogId = createSecondBlogResponse.body.id;
+
+         const firstBlogPostInput: CreatePostInputDto = {
+            title: 'NestJS basics',
+            shortDescription: 'Introduction to NestJS',
+            content: 'How to get started with NestJS.',
+            blogId: firstBlogId,
+         };
+
+         const secondBlogPostInput: CreatePostInputDto = {
+            title: 'React basics',
+            shortDescription: 'Introduction to React',
+            content: 'How to get started with React.',
+            blogId: secondBlogId,
+         };
+
+         // Создаём по одному посту в каждом блоге.
+         const createFirstBlogPostResponse = await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/posts`)
+            .auth('admin', 'qwerty')
+            .send(firstBlogPostInput)
+            .expect(201);
+
+         const firstBlogPostId = createFirstBlogPostResponse.body.id;
+
+         const createSecondBlogPostResponse = await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/posts`)
+            .auth('admin', 'qwerty')
+            .send(secondBlogPostInput)
+            .expect(201);
+
+         const secondBlogPostId = createSecondBlogPostResponse.body.id;
+
+         const loginResponse = await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/auth/login`)
+            .send({
+               loginOrEmail: userInput.login,
+               password: userInput.password,
+            })
+            .expect(200);
+
+         const authorAccessToken = loginResponse.body.accessToken;
+
+         const commentInput: CreateCommentInputDto = {
+            content: 'This article was useful and easy to understand.',
+         };
+
+         // Добавляем по одному комментарию к каждому посту.
+         const createFirstBlogCommentResponse = await request(
+            app.getHttpServer(),
+         )
+            .post(`/${GLOBAL_PREFIX}/posts/${firstBlogPostId}/comments`)
+            .set('Authorization', `Bearer ${authorAccessToken}`)
+            .send(commentInput)
+            .expect(201);
+
+         const firstBlogCommentId = createFirstBlogCommentResponse.body.id;
+
+         const createSecondBlogCommentResponse = await request(
+            app.getHttpServer(),
+         )
+            .post(`/${GLOBAL_PREFIX}/posts/${secondBlogPostId}/comments`)
+            .set('Authorization', `Bearer ${authorAccessToken}`)
+            .send(commentInput)
+            .expect(201);
+
+         const secondBlogCommentId = createSecondBlogCommentResponse.body.id;
+
+         // Администратор удаляет первый блог.
+         await request(app.getHttpServer())
+            .delete(`/${GLOBAL_PREFIX}/blogs/${firstBlogId}`)
+            .auth('admin', 'qwerty')
+            .expect(204);
+
+         // Блог, его пост и комментарий больше не доступны.
+         await request(app.getHttpServer())
+            .get(`/${GLOBAL_PREFIX}/blogs/${firstBlogId}`)
+            .expect(404);
+
+         await request(app.getHttpServer())
+            .get(`/${GLOBAL_PREFIX}/posts/${firstBlogPostId}`)
+            .expect(404);
+
+         await request(app.getHttpServer())
+            .get(`/${GLOBAL_PREFIX}/comments/${firstBlogCommentId}`)
+            .expect(404);
+
+         // Второй блог остаётся доступным и неизменённым.
+         const getSecondBlogResponse = await request(app.getHttpServer())
+            .get(`/${GLOBAL_PREFIX}/blogs/${secondBlogId}`)
+            .expect(200);
+
+         expect(getSecondBlogResponse.body).toEqual(
+            createSecondBlogResponse.body,
+         );
+
+         // Его пост также сохраняется.
+         const getSecondBlogPostResponse = await request(app.getHttpServer())
+            .get(`/${GLOBAL_PREFIX}/posts/${secondBlogPostId}`)
+            .expect(200);
+
+         expect(getSecondBlogPostResponse.body).toEqual(
+            createSecondBlogPostResponse.body,
+         );
+
+         // И комментарий к этому посту сохраняется.
+         const getSecondBlogCommentResponse = await request(app.getHttpServer())
+            .get(`/${GLOBAL_PREFIX}/comments/${secondBlogCommentId}`)
+            .expect(200);
+
+         expect(getSecondBlogCommentResponse.body).toEqual(
+            createSecondBlogCommentResponse.body,
+         );
       });
    });
 

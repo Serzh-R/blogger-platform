@@ -622,6 +622,132 @@ describe('Comments (e2e)', () => {
       });
    });
 
+   describe('Comments after post deletion', () => {
+      it('deletes comments of the removed post and preserves another post comments', async () => {
+         const userInput: CreateUserInputDto = {
+            login: 'author',
+            email: 'author@example.com',
+            password: 'Test12345',
+         };
+
+         await usersTestManager.createUser(userInput);
+
+         const blogInput: CreateBlogInputDto = {
+            name: 'Backend blog',
+            description: 'A blog about backend development',
+            websiteUrl: 'https://example.com',
+         };
+
+         const createBlogResponse = await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/blogs`)
+            .auth('admin', 'qwerty')
+            .send(blogInput)
+            .expect(201);
+
+         const createdBlogId = createBlogResponse.body.id;
+
+         const firstPostInput: CreatePostInputDto = {
+            title: 'NestJS controllers',
+            shortDescription: 'Introduction to controllers',
+            content: 'How controllers handle HTTP requests.',
+            blogId: createdBlogId,
+         };
+
+         const secondPostInput: CreatePostInputDto = {
+            title: 'NestJS services',
+            shortDescription: 'Introduction to services',
+            content: 'How services implement application logic.',
+            blogId: createdBlogId,
+         };
+
+         // Создаём два поста в одном блоге.
+         const createFirstPostResponse = await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/posts`)
+            .auth('admin', 'qwerty')
+            .send(firstPostInput)
+            .expect(201);
+
+         const firstPostId = createFirstPostResponse.body.id;
+
+         const createSecondPostResponse = await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/posts`)
+            .auth('admin', 'qwerty')
+            .send(secondPostInput)
+            .expect(201);
+
+         const secondPostId = createSecondPostResponse.body.id;
+
+         const loginResponse = await request(app.getHttpServer())
+            .post(`/${GLOBAL_PREFIX}/auth/login`)
+            .send({
+               loginOrEmail: userInput.login,
+               password: userInput.password,
+            })
+            .expect(200);
+
+         const authorAccessToken = loginResponse.body.accessToken;
+
+         const commentInput: CreateCommentInputDto = {
+            content: 'This explanation helped me understand NestJS.',
+         };
+
+         // Добавляем комментарий к первому посту.
+         const createFirstPostCommentResponse = await request(
+            app.getHttpServer(),
+         )
+            .post(`/${GLOBAL_PREFIX}/posts/${firstPostId}/comments`)
+            .set('Authorization', `Bearer ${authorAccessToken}`)
+            .send(commentInput)
+            .expect(201);
+
+         const firstPostCommentId = createFirstPostCommentResponse.body.id;
+
+         // Добавляем отдельный комментарий ко второму посту.
+         const createSecondPostCommentResponse = await request(
+            app.getHttpServer(),
+         )
+            .post(`/${GLOBAL_PREFIX}/posts/${secondPostId}/comments`)
+            .set('Authorization', `Bearer ${authorAccessToken}`)
+            .send(commentInput)
+            .expect(201);
+
+         const secondPostCommentId = createSecondPostCommentResponse.body.id;
+
+         // Администратор удаляет первый пост.
+         await request(app.getHttpServer())
+            .delete(`/${GLOBAL_PREFIX}/posts/${firstPostId}`)
+            .auth('admin', 'qwerty')
+            .expect(204);
+
+         // Первый пост и его комментарий больше не доступны.
+         await request(app.getHttpServer())
+            .get(`/${GLOBAL_PREFIX}/posts/${firstPostId}`)
+            .expect(404);
+
+         await request(app.getHttpServer())
+            .get(`/${GLOBAL_PREFIX}/comments/${firstPostCommentId}`)
+            .expect(404);
+
+         // Второй пост остаётся доступным.
+         const getSecondPostResponse = await request(app.getHttpServer())
+            .get(`/${GLOBAL_PREFIX}/posts/${secondPostId}`)
+            .expect(200);
+
+         expect(getSecondPostResponse.body).toEqual(
+            createSecondPostResponse.body,
+         );
+
+         // Его комментарий также остаётся доступным и неизменённым.
+         const getSecondPostCommentResponse = await request(app.getHttpServer())
+            .get(`/${GLOBAL_PREFIX}/comments/${secondPostCommentId}`)
+            .expect(200);
+
+         expect(getSecondPostCommentResponse.body).toEqual(
+            createSecondPostCommentResponse.body,
+         );
+      });
+   });
+
    afterAll(async () => {
       if (app) {
          await app.close();
