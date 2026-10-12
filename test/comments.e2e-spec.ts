@@ -10,6 +10,7 @@ import { deleteAllData } from './helpers/delete-all-data';
 import { initSettings } from './helpers/init-settings';
 import { UsersTestManager } from './helpers/users-test-manager';
 import type { UpdateCommentInputDto } from '../src/modules/bloggers-platform/comments/api/input-dto/update-comment.input-dto';
+import { createUserTestData } from './helpers/user-test-data';
 
 describe('Comments (e2e)', () => {
    let app: INestApplication;
@@ -33,11 +34,7 @@ describe('Comments (e2e)', () => {
 
    describe('POST /api/posts/:postId/comments', () => {
       it('creates a comment from an authenticated user', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          // Создаём пользователя, который будет автором комментария.
          const createdUser = await usersTestManager.createUser(userInput);
@@ -164,11 +161,7 @@ describe('Comments (e2e)', () => {
 
    describe('GET /api/comments/:id', () => {
       it('returns an existing comment by id', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          await usersTestManager.createUser(userInput);
 
@@ -237,11 +230,7 @@ describe('Comments (e2e)', () => {
 
    describe('PUT /api/comments/:id', () => {
       it('allows the author to update their own comment', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          const createdUser = await usersTestManager.createUser(userInput);
 
@@ -334,11 +323,7 @@ describe('Comments (e2e)', () => {
 
    describe('DELETE /api/comments/:id', () => {
       it('allows the author to delete their own comment', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          await usersTestManager.createUser(userInput);
 
@@ -516,11 +501,7 @@ describe('Comments (e2e)', () => {
 
    describe('GET /api/posts/:postId/comments', () => {
       it('returns only comments belonging to the requested post', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          await usersTestManager.createUser(userInput);
 

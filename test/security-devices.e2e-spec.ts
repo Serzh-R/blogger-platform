@@ -7,6 +7,7 @@ import { deleteAllData } from './helpers/delete-all-data';
 import { initSettings } from './helpers/init-settings';
 import { UsersTestManager } from './helpers/users-test-manager';
 import type { DeviceSessionViewDto } from '../src/modules/user-accounts/api/view-dto/device-session.view-dto';
+import { createUserTestData } from './helpers/user-test-data';
 
 describe('Security devices (e2e)', () => {
    let app: INestApplication;
@@ -30,11 +31,7 @@ describe('Security devices (e2e)', () => {
 
    describe('GET /api/security/devices', () => {
       it('returns the device session created during login', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          const deviceTitle = 'Test browser';
 
@@ -85,11 +82,7 @@ describe('Security devices (e2e)', () => {
       });
 
       it('returns both device sessions after login from two devices', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          const computerTitle = 'Computer browser';
          const phoneTitle = 'Phone browser';
@@ -168,11 +161,7 @@ describe('Security devices (e2e)', () => {
 
    describe('DELETE /api/security/devices', () => {
       it('terminates other device sessions and keeps the current session', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          const computerTitle = 'Computer browser';
          const phoneTitle = 'Phone browser';
@@ -265,11 +254,7 @@ describe('Security devices (e2e)', () => {
 
    describe('DELETE /api/security/devices/:deviceId', () => {
       it('terminates the selected device session and keeps other sessions', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          const computerTitle = 'Computer browser';
          const phoneTitle = 'Phone browser';

@@ -1,6 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import type { CreateUserInputDto } from '../src/modules/user-accounts/api/input-dto/create-user.input-dto';
 import { GLOBAL_PREFIX } from '../src/setup/global-prefix.setup';
 import { deleteAllData } from './helpers/delete-all-data';
 import { initSettings } from './helpers/init-settings';
@@ -8,6 +7,7 @@ import { UsersTestManager } from './helpers/users-test-manager';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtService } from '@nestjs/jwt';
 import { UserAccountsConfig } from '../src/modules/user-accounts/config/user-accounts.config';
+import { createUserTestData } from './helpers/user-test-data';
 
 describe('Auth (e2e)', () => {
    let app: INestApplication;
@@ -31,11 +31,7 @@ describe('Auth (e2e)', () => {
 
    describe('POST /api/auth/login', () => {
       it('signs in with valid credentials and returns both tokens', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          // Создаём пользователя через API.
          await usersTestManager.createUser(input);
@@ -79,11 +75,7 @@ describe('Auth (e2e)', () => {
       });
 
       it('signs in with a valid email and password', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          // Создаём пользователя через API.
          await usersTestManager.createUser(input);
@@ -105,11 +97,7 @@ describe('Auth (e2e)', () => {
       });
 
       it('returns 401 when the password is incorrect', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          // Создаём пользователя с правильным паролем.
          await usersTestManager.createUser(input);
@@ -148,11 +136,7 @@ describe('Auth (e2e)', () => {
       });
 
       it('returns 401 when the user has been deleted', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          // Создаём пользователя и получаем его идентификатор.
          const createdUser = await usersTestManager.createUser(input);
@@ -180,11 +164,7 @@ describe('Auth (e2e)', () => {
 
    describe('GET /api/auth/me', () => {
       it('returns the current user with a valid access token', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          const createdUser = await usersTestManager.createUser(input);
 
@@ -229,11 +209,7 @@ describe('Auth (e2e)', () => {
       });
 
       it('returns 401 when the access token signature is invalid', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          await usersTestManager.createUser(input);
 
@@ -263,11 +239,7 @@ describe('Auth (e2e)', () => {
       });
 
       it('returns 401 when the token belongs to a deleted user', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          const createdUser = await usersTestManager.createUser(input);
 
@@ -296,11 +268,8 @@ describe('Auth (e2e)', () => {
       });
 
       it('returns 401 when the access token has expired', async () => {
-         const createdUser = await usersTestManager.createUser({
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         });
+         const createdUser =
+            await usersTestManager.createUser(createUserTestData());
 
          // Получаем зарегистрированные зависимости из тестового приложения.
          const jwtService = app.get(JwtService);
@@ -327,11 +296,7 @@ describe('Auth (e2e)', () => {
 
    describe('POST /api/auth/refresh-token', () => {
       it('returns both tokens with a valid refresh token', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          await usersTestManager.createUser(input);
 
@@ -417,11 +382,7 @@ describe('Auth (e2e)', () => {
       });
 
       it('returns 401 when an access token is used as a refresh token', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          await usersTestManager.createUser(input);
 
@@ -448,11 +409,7 @@ describe('Auth (e2e)', () => {
       });
 
       it('returns 401 when the refresh token signature is invalid', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          await usersTestManager.createUser(input);
 
@@ -501,11 +458,7 @@ describe('Auth (e2e)', () => {
       });
 
       it('returns 401 when the refresh token has expired', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          await usersTestManager.createUser(input);
 
@@ -572,11 +525,7 @@ describe('Auth (e2e)', () => {
       });
 
       it('returns 401 when the refresh token belongs to a deleted user', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          const createdUser = await usersTestManager.createUser(input);
 
@@ -624,11 +573,7 @@ describe('Auth (e2e)', () => {
 
    describe('POST /api/auth/logout', () => {
       it('signs out and rejects the refresh token after logout', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          await usersTestManager.createUser(input);
 

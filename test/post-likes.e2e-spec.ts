@@ -11,6 +11,7 @@ import { deleteAllData } from './helpers/delete-all-data';
 import { initSettings } from './helpers/init-settings';
 import { UsersTestManager } from './helpers/users-test-manager';
 import type { UserViewDto } from '../src/modules/user-accounts/api/view-dto/user.view-dto';
+import { createUserTestData } from './helpers/user-test-data';
 
 describe('Post likes (e2e)', () => {
    let app: INestApplication;
@@ -34,11 +35,7 @@ describe('Post likes (e2e)', () => {
 
    describe('PUT /api/posts/:postId/like-status', () => {
       it('adds a like and returns the user status and newest like', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          const createdUser = await usersTestManager.createUser(userInput);
 
@@ -113,11 +110,7 @@ describe('Post likes (e2e)', () => {
       });
 
       it('changes a like to a dislike and then removes the rating', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          await usersTestManager.createUser(userInput);
 
@@ -212,11 +205,7 @@ describe('Post likes (e2e)', () => {
       });
 
       it('does not count the same user like twice', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          const createdUser = await usersTestManager.createUser(userInput);
 

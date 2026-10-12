@@ -5,6 +5,7 @@ import { GLOBAL_PREFIX } from '../src/setup/global-prefix.setup';
 import { deleteAllData } from './helpers/delete-all-data';
 import { initSettings } from './helpers/init-settings';
 import { UsersTestManager } from './helpers/users-test-manager';
+import { createUserTestData } from './helpers/user-test-data';
 
 describe('Users (e2e)', () => {
    let app: INestApplication;
@@ -25,11 +26,7 @@ describe('Users (e2e)', () => {
 
    describe('POST /api/users', () => {
       it('creates a user with valid data: 201', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          const createdUser = await usersTestManager.createUser(input);
 
@@ -52,11 +49,10 @@ describe('Users (e2e)', () => {
       });
 
       it('returns 400 for a login shorter than 3 characters', async () => {
-         const input: CreateUserInputDto = {
+         // Передаём короткий логин, остальные поля остаются корректными
+         const input = createUserTestData({
             login: 'ab',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         });
 
          // Отправляем данные с некорректной длиной логина.
          const response = await request(app.getHttpServer())
@@ -86,11 +82,9 @@ describe('Users (e2e)', () => {
       });
 
       it('returns 400 for a login longer than 10 characters', async () => {
-         const input: CreateUserInputDto = {
+         const input = createUserTestData({
             login: 'testuser123',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         });
 
          // Отправляем логин из 11 символов при допустимом максимуме 10.
          const response = await request(app.getHttpServer())
@@ -120,11 +114,9 @@ describe('Users (e2e)', () => {
       });
 
       it('returns 400 for an invalid email', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
+         const input = createUserTestData({
             email: 'invalid-email',
-            password: 'Test12345',
-         };
+         });
 
          // Отправляем данные с некорректным email.
          const response = await request(app.getHttpServer())
@@ -154,11 +146,9 @@ describe('Users (e2e)', () => {
       });
 
       it('returns 400 for a password shorter than 6 characters', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
+         const input = createUserTestData({
             password: '12345',
-         };
+         });
 
          // Отправляем пароль из 5 символов при допустимом минимуме 6.
          const response = await request(app.getHttpServer())
@@ -188,11 +178,9 @@ describe('Users (e2e)', () => {
       });
 
       it('returns 400 for a password longer than 20 characters', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
+         const input = createUserTestData({
             password: 'a'.repeat(21),
-         };
+         });
 
          // Отправляем пароль из 21 символа при допустимом максимуме 20.
          const response = await request(app.getHttpServer())
@@ -222,11 +210,7 @@ describe('Users (e2e)', () => {
       });
 
       it('returns 401 when Basic Auth is missing', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          // Отправляем корректные данные без Basic Auth.
          await request(app.getHttpServer())
@@ -246,11 +230,7 @@ describe('Users (e2e)', () => {
       });
 
       it('returns 401 when the Basic Auth password is incorrect', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          // Передаём правильный логин администратора и неправильный пароль.
          await request(app.getHttpServer())
@@ -271,11 +251,7 @@ describe('Users (e2e)', () => {
       });
 
       it('returns 400 when the login is already in use', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          // Создаём первого пользователя с корректными данными.
          const createdUser = await usersTestManager.createUser(input);
@@ -314,11 +290,7 @@ describe('Users (e2e)', () => {
       });
 
       it('returns 400 when the email is already in use', async () => {
-         const input: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const input = createUserTestData();
 
          // Создаём первого пользователя.
          const createdUser = await usersTestManager.createUser(input);
@@ -694,11 +666,8 @@ describe('Users (e2e)', () => {
    describe('DELETE /api/users/:id', () => {
       it('deletes an existing user and removes them from the list', async () => {
          // Создаём пользователя для удаления.
-         const createdUser = await usersTestManager.createUser({
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         });
+         const createdUser =
+            await usersTestManager.createUser(createUserTestData());
 
          // Удаляем пользователя по полученному идентификатору.
          const deleteResponse = await request(app.getHttpServer())
@@ -741,11 +710,8 @@ describe('Users (e2e)', () => {
 
       it('returns 404 when the user has already been deleted', async () => {
          // Создаём пользователя для проверки повторного удаления.
-         const createdUser = await usersTestManager.createUser({
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         });
+         const createdUser =
+            await usersTestManager.createUser(createUserTestData());
 
          // Первое удаление должно завершиться успешно.
          await request(app.getHttpServer())
@@ -762,11 +728,8 @@ describe('Users (e2e)', () => {
 
       it('returns 401 without Basic Auth and keeps the user in the list', async () => {
          // Создаём пользователя с корректной авторизацией.
-         const createdUser = await usersTestManager.createUser({
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         });
+         const createdUser =
+            await usersTestManager.createUser(createUserTestData());
 
          // Пытаемся удалить существующего пользователя без Basic Auth.
          await request(app.getHttpServer())
@@ -786,11 +749,8 @@ describe('Users (e2e)', () => {
 
       it('returns 401 with an incorrect Basic Auth password and keeps the user', async () => {
          // Создаём пользователя с правильной авторизацией.
-         const createdUser = await usersTestManager.createUser({
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         });
+         const createdUser =
+            await usersTestManager.createUser(createUserTestData());
 
          // Пытаемся удалить пользователя с неверным паролем администратора.
          await request(app.getHttpServer())
