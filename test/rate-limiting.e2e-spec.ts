@@ -1,10 +1,10 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import type { CreateUserInputDto } from '../src/modules/user-accounts/api/input-dto/create-user.input-dto';
 import { GLOBAL_PREFIX } from '../src/setup/global-prefix.setup';
 import { deleteAllData } from './helpers/delete-all-data';
 import { initSettings } from './helpers/init-settings';
 import { UsersTestManager } from './helpers/users-test-manager';
+import { createUserTestData } from './helpers/user-test-data';
 
 describe('Rate limiting (e2e)', () => {
    let app: INestApplication;
@@ -22,11 +22,7 @@ describe('Rate limiting (e2e)', () => {
 
    describe('POST /api/auth/login', () => {
       it('returns 429 after five login attempts with a wrong password', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          await usersTestManager.createUser(userInput);
 

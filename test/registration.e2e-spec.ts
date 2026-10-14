@@ -2,12 +2,12 @@ import type { INestApplication } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { EmailService } from '../src/modules/notifications/email.service';
-import type { CreateUserInputDto } from '../src/modules/user-accounts/api/input-dto/create-user.input-dto';
 import { GLOBAL_PREFIX } from '../src/setup/global-prefix.setup';
 import { deleteAllData } from './helpers/delete-all-data';
 import { initSettings } from './helpers/init-settings';
 import type { RegistrationConfirmationInputDto } from '../src/modules/user-accounts/api/input-dto/registration-confirmation.input-dto';
 import type { RegistrationEmailResendingInputDto } from '../src/modules/user-accounts/api/input-dto/registration-email-resending.input-dto';
+import { createUserTestData } from './helpers/user-test-data';
 
 describe('Registration (e2e)', () => {
    let app: INestApplication;
@@ -50,11 +50,7 @@ describe('Registration (e2e)', () => {
 
    describe('POST /api/auth/registration', () => {
       it('registers a user and requests a confirmation email', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          // Регистрируем пользователя без авторизации администратора.
          await request(app.getHttpServer())
@@ -90,11 +86,7 @@ describe('Registration (e2e)', () => {
 
    describe('POST /api/auth/registration-confirmation', () => {
       it('confirms registration and rejects reuse of the confirmation code', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          // Регистрируем пользователя: приложение создаёт и сохраняет код.
          await request(app.getHttpServer())
@@ -138,11 +130,7 @@ describe('Registration (e2e)', () => {
 
    describe('POST /api/auth/registration-email-resending', () => {
       it('sends a new confirmation code and invalidates the previous code', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Test12345',
-         };
+         const userInput = createUserTestData();
 
          // Регистрируем пользователя и получаем первое письмо.
          await request(app.getHttpServer())

@@ -8,6 +8,11 @@ import { initSettings } from './helpers/init-settings';
 import type { UpdatePostInputDto } from '../src/modules/bloggers-platform/posts/api/input-dto/update-post.input-dto';
 import type { PostViewDto } from '../src/modules/bloggers-platform/posts/api/view-dto/post.view-dto';
 import type { CreateBlogPostInputDto } from '../src/modules/bloggers-platform/blogs/api/input-dto/create-blog-post.input-dto';
+import { createBlogTestData } from './helpers/blog-test-data';
+import {
+   createBlogPostTestData,
+   createPostTestData,
+} from './helpers/post-test-data';
 
 describe('Posts (e2e)', () => {
    let app: INestApplication;
@@ -23,11 +28,7 @@ describe('Posts (e2e)', () => {
 
    describe('POST /api/posts', () => {
       it('creates a post in an existing blog with valid data', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Создаём блог, к которому будет относиться пост.
          const createBlogResponse = await request(app.getHttpServer())
@@ -38,12 +39,7 @@ describe('Posts (e2e)', () => {
 
          const createdBlogId = createBlogResponse.body.id;
 
-         const postInput: CreatePostInputDto = {
-            title: 'Getting started with NestJS',
-            shortDescription: 'An introduction to NestJS',
-            content: 'This post explains how to create a NestJS application.',
-            blogId: createdBlogId,
-         };
+         const postInput = createPostTestData(createdBlogId);
 
          // Создаём пост с авторизацией администратора.
          const createPostResponse = await request(app.getHttpServer())
@@ -71,11 +67,7 @@ describe('Posts (e2e)', () => {
       });
 
       it('rejects post creation for a deleted blog', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Создаём блог и сохраняем его ID.
          const createBlogResponse = await request(app.getHttpServer())
@@ -92,12 +84,7 @@ describe('Posts (e2e)', () => {
             .auth('admin', 'qwerty')
             .expect(204);
 
-         const postInput: CreatePostInputDto = {
-            title: 'Getting started with NestJS',
-            shortDescription: 'An introduction to NestJS',
-            content: 'This post explains how to create a NestJS application.',
-            blogId: deletedBlogId,
-         };
+         const postInput = createPostTestData(deletedBlogId);
 
          // Пытаемся создать пост, используя прежний ID блога.
          const createPostErrorResponse = await request(app.getHttpServer())
@@ -128,11 +115,7 @@ describe('Posts (e2e)', () => {
 
    describe('GET /api/posts/:id', () => {
       it('returns an existing post by id', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Создаём блог, которому будет принадлежать пост.
          const createBlogResponse = await request(app.getHttpServer())
@@ -143,12 +126,7 @@ describe('Posts (e2e)', () => {
 
          const createdBlogId = createBlogResponse.body.id;
 
-         const postInput: CreatePostInputDto = {
-            title: 'Getting started with NestJS',
-            shortDescription: 'An introduction to NestJS',
-            content: 'This post explains how to create a NestJS application.',
-            blogId: createdBlogId,
-         };
+         const postInput = createPostTestData(createdBlogId);
 
          // Создаём пост, который затем будем запрашивать.
          const createPostResponse = await request(app.getHttpServer())
@@ -172,11 +150,7 @@ describe('Posts (e2e)', () => {
 
    describe('PUT /api/posts/:id', () => {
       it('updates an existing post with valid data', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Создаём блог для поста.
          const createBlogResponse = await request(app.getHttpServer())
@@ -187,12 +161,7 @@ describe('Posts (e2e)', () => {
 
          const createdBlogId = createBlogResponse.body.id;
 
-         const originalPostInput: CreatePostInputDto = {
-            title: 'Getting started with NestJS',
-            shortDescription: 'An introduction to NestJS',
-            content: 'This post explains how to create a NestJS application.',
-            blogId: createdBlogId,
-         };
+         const originalPostInput = createPostTestData(createdBlogId);
 
          // Создаём пост с исходными данными.
          const createPostResponse = await request(app.getHttpServer())
@@ -243,11 +212,7 @@ describe('Posts (e2e)', () => {
 
    describe('DELETE /api/posts/:id', () => {
       it('deletes an existing post', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Создаём блог для поста.
          const createBlogResponse = await request(app.getHttpServer())
@@ -258,12 +223,7 @@ describe('Posts (e2e)', () => {
 
          const createdBlogId = createBlogResponse.body.id;
 
-         const postInput: CreatePostInputDto = {
-            title: 'Getting started with NestJS',
-            shortDescription: 'An introduction to NestJS',
-            content: 'This post explains how to create a NestJS application.',
-            blogId: createdBlogId,
-         };
+         const postInput = createPostTestData(createdBlogId);
 
          // Создаём пост, который затем удалим.
          const createPostResponse = await request(app.getHttpServer())
@@ -296,11 +256,7 @@ describe('Posts (e2e)', () => {
 
    describe('GET /api/posts', () => {
       it('returns the requested page of posts with pagination metadata', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Создаём общий блог для трёх постов.
          const createBlogResponse = await request(app.getHttpServer())
@@ -372,11 +328,7 @@ describe('Posts (e2e)', () => {
 
    describe('POST /api/blogs/:blogId/posts', () => {
       it('creates a post in the blog specified in the URL', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Создаём блог, в котором будем публиковать пост.
          const createBlogResponse = await request(app.getHttpServer())
@@ -388,11 +340,7 @@ describe('Posts (e2e)', () => {
          const createdBlogId = createBlogResponse.body.id;
 
          // Для этого endpoint ID блога в теле запроса не нужен.
-         const postInput: CreateBlogPostInputDto = {
-            title: 'Getting started with NestJS',
-            shortDescription: 'An introduction to NestJS',
-            content: 'This post explains how to create a NestJS application.',
-         };
+         const postInput = createBlogPostTestData();
 
          // Передаём ID блога в URL и создаём пост.
          const createPostResponse = await request(app.getHttpServer())
@@ -422,11 +370,9 @@ describe('Posts (e2e)', () => {
 
    describe('GET /api/blogs/:blogId/posts', () => {
       it('returns only posts belonging to the requested blog', async () => {
-         const firstBlogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
+         const firstBlogInput = createBlogTestData({
             websiteUrl: 'https://backend.example.com',
-         };
+         });
 
          const secondBlogInput: CreateBlogInputDto = {
             name: 'Frontend blog',

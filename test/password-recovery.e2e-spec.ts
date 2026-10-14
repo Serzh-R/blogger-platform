@@ -2,13 +2,13 @@ import type { INestApplication } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { EmailService } from '../src/modules/notifications/email.service';
-import type { CreateUserInputDto } from '../src/modules/user-accounts/api/input-dto/create-user.input-dto';
 import type { NewPasswordInputDto } from '../src/modules/user-accounts/api/input-dto/new-password.input-dto';
 import type { PasswordRecoveryInputDto } from '../src/modules/user-accounts/api/input-dto/password-recovery.input-dto';
 import { GLOBAL_PREFIX } from '../src/setup/global-prefix.setup';
 import { deleteAllData } from './helpers/delete-all-data';
 import { initSettings } from './helpers/init-settings';
 import { UsersTestManager } from './helpers/users-test-manager';
+import { createUserTestData } from './helpers/user-test-data';
 
 describe('Password recovery (e2e)', () => {
    let app: INestApplication;
@@ -51,11 +51,9 @@ describe('Password recovery (e2e)', () => {
 
    describe('Password recovery flow', () => {
       it('sets a new password and rejects the old password and code reuse', async () => {
-         const userInput: CreateUserInputDto = {
-            login: 'testuser',
-            email: 'testuser@example.com',
+         const userInput = createUserTestData({
             password: 'OldPass123',
-         };
+         });
 
          await usersTestManager.createUser(userInput);
 

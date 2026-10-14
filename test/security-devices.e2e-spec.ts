@@ -8,6 +8,7 @@ import { initSettings } from './helpers/init-settings';
 import { UsersTestManager } from './helpers/users-test-manager';
 import type { DeviceSessionViewDto } from '../src/modules/user-accounts/api/view-dto/device-session.view-dto';
 import { createUserTestData } from './helpers/user-test-data';
+import { getRefreshTokenCookie } from './helpers/refresh-token-cookie';
 
 describe('Security devices (e2e)', () => {
    let app: INestApplication;
@@ -47,22 +48,10 @@ describe('Security devices (e2e)', () => {
             })
             .expect(200);
 
-         // Получаем refresh cookie.
-         const loginCookies: unknown = loginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(loginCookies)) {
-            throw new Error('Set-Cookie header must be an array');
-         }
-
-         const loginRefreshCookie = loginCookies.find((cookie: string) =>
-            cookie.startsWith('refreshToken='),
+         // Получаем имя и значение refresh cookie из ответа на вход.
+         const refreshTokenCookie = getRefreshTokenCookie(
+            loginResponse.headers['set-cookie'],
          );
-
-         if (typeof loginRefreshCookie !== 'string') {
-            throw new Error('Refresh token cookie is missing');
-         }
-
-         const refreshTokenCookie = loginRefreshCookie.split(';')[0];
 
          // Запрашиваем список сессий с полученной cookie.
          const response = await request(app.getHttpServer())

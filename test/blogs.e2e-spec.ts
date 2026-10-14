@@ -10,6 +10,7 @@ import type { CreatePostInputDto } from '../src/modules/bloggers-platform/posts/
 import type { CreateCommentInputDto } from '../src/modules/bloggers-platform/comments/api/input-dto/create-comment.input-dto';
 import type { CreateUserInputDto } from '../src/modules/user-accounts/api/input-dto/create-user.input-dto';
 import { UsersTestManager } from './helpers/users-test-manager';
+import { createBlogTestData } from './helpers/blog-test-data';
 
 describe('Blogs (e2e)', () => {
    let app: INestApplication;
@@ -28,11 +29,7 @@ describe('Blogs (e2e)', () => {
 
    describe('POST /api/blogs', () => {
       it('creates a blog with valid data', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Создаём блог с авторизацией администратора.
          const createBlogResponse = await request(app.getHttpServer())
@@ -53,11 +50,9 @@ describe('Blogs (e2e)', () => {
       });
 
       it('rejects an invalid website URL and does not create a blog', async () => {
-         const invalidBlogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
+         const invalidBlogInput = createBlogTestData({
             websiteUrl: 'not-a-url',
-         };
+         });
 
          // Пытаемся создать блог с некорректным адресом сайта.
          const createBlogErrorResponse = await request(app.getHttpServer())
@@ -92,11 +87,7 @@ describe('Blogs (e2e)', () => {
       });
 
       it('rejects blog creation without authorization', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Отправляем корректные данные без Basic Auth.
          await request(app.getHttpServer())
@@ -116,11 +107,7 @@ describe('Blogs (e2e)', () => {
 
    describe('GET /api/blogs/:id', () => {
       it('returns an existing blog by id', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Создаём блог, который затем будем запрашивать.
          const createBlogResponse = await request(app.getHttpServer())
@@ -144,11 +131,7 @@ describe('Blogs (e2e)', () => {
 
    describe('PUT /api/blogs/:id', () => {
       it('updates an existing blog with valid data', async () => {
-         const originalBlogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const originalBlogInput = createBlogTestData();
 
          // Создаём блог с исходными данными.
          const createBlogResponse = await request(app.getHttpServer())
@@ -191,11 +174,7 @@ describe('Blogs (e2e)', () => {
 
    describe('DELETE /api/blogs/:id', () => {
       it('deletes an existing blog', async () => {
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          // Создаём блог, который затем удалим.
          const createBlogResponse = await request(app.getHttpServer())
@@ -335,11 +314,9 @@ describe('Blogs (e2e)', () => {
 
          await usersTestManager.createUser(userInput);
 
-         const firstBlogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
+         const firstBlogInput = createBlogTestData({
             websiteUrl: 'https://backend.example.com',
-         };
+         });
 
          const secondBlogInput: CreateBlogInputDto = {
             name: 'Frontend blog',

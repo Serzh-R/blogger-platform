@@ -1,16 +1,16 @@
 import type { INestApplication } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
-import type { CreateBlogInputDto } from '../src/modules/bloggers-platform/blogs/api/input-dto/create-blog.input-dto';
 import type { CreateCommentInputDto } from '../src/modules/bloggers-platform/comments/api/input-dto/create-comment.input-dto';
 import type { UpdateLikeStatusInputDto } from '../src/modules/bloggers-platform/likes/api/input-dto/update-like-status.input-dto';
 import { LikeStatus } from '../src/modules/bloggers-platform/likes/domain/like-status.enum';
-import type { CreatePostInputDto } from '../src/modules/bloggers-platform/posts/api/input-dto/create-post.input-dto';
 import type { CreateUserInputDto } from '../src/modules/user-accounts/api/input-dto/create-user.input-dto';
 import { GLOBAL_PREFIX } from '../src/setup/global-prefix.setup';
 import { deleteAllData } from './helpers/delete-all-data';
 import { initSettings } from './helpers/init-settings';
 import { UsersTestManager } from './helpers/users-test-manager';
+import { createBlogTestData } from './helpers/blog-test-data';
+import { createPostTestData } from './helpers/post-test-data';
 
 describe('Comment likes (e2e)', () => {
    let app: INestApplication;
@@ -49,11 +49,7 @@ describe('Comment likes (e2e)', () => {
          await usersTestManager.createUser(authorInput);
          await usersTestManager.createUser(likerInput);
 
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          const createBlogResponse = await request(app.getHttpServer())
             .post(`/${GLOBAL_PREFIX}/blogs`)
@@ -61,12 +57,7 @@ describe('Comment likes (e2e)', () => {
             .send(blogInput)
             .expect(201);
 
-         const postInput: CreatePostInputDto = {
-            title: 'Getting started with NestJS',
-            shortDescription: 'An introduction to NestJS',
-            content: 'This post explains how to create a NestJS application.',
-            blogId: createBlogResponse.body.id,
-         };
+         const postInput = createPostTestData(createBlogResponse.body.id);
 
          const createPostResponse = await request(app.getHttpServer())
             .post(`/${GLOBAL_PREFIX}/posts`)
@@ -151,11 +142,7 @@ describe('Comment likes (e2e)', () => {
          await usersTestManager.createUser(authorInput);
          await usersTestManager.createUser(likerInput);
 
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          const createBlogResponse = await request(app.getHttpServer())
             .post(`/${GLOBAL_PREFIX}/blogs`)
@@ -163,12 +150,7 @@ describe('Comment likes (e2e)', () => {
             .send(blogInput)
             .expect(201);
 
-         const postInput: CreatePostInputDto = {
-            title: 'Getting started with NestJS',
-            shortDescription: 'An introduction to NestJS',
-            content: 'This post explains how to create a NestJS application.',
-            blogId: createBlogResponse.body.id,
-         };
+         const postInput = createPostTestData(createBlogResponse.body.id);
 
          const createPostResponse = await request(app.getHttpServer())
             .post(`/${GLOBAL_PREFIX}/posts`)
@@ -299,11 +281,7 @@ describe('Comment likes (e2e)', () => {
          await usersTestManager.createUser(authorInput);
          await usersTestManager.createUser(likerInput);
 
-         const blogInput: CreateBlogInputDto = {
-            name: 'Backend blog',
-            description: 'A blog about backend development',
-            websiteUrl: 'https://example.com',
-         };
+         const blogInput = createBlogTestData();
 
          const createBlogResponse = await request(app.getHttpServer())
             .post(`/${GLOBAL_PREFIX}/blogs`)
@@ -311,12 +289,7 @@ describe('Comment likes (e2e)', () => {
             .send(blogInput)
             .expect(201);
 
-         const postInput: CreatePostInputDto = {
-            title: 'Getting started with NestJS',
-            shortDescription: 'An introduction to NestJS',
-            content: 'This post explains how to create a NestJS application.',
-            blogId: createBlogResponse.body.id,
-         };
+         const postInput = createPostTestData(createBlogResponse.body.id);
 
          const createPostResponse = await request(app.getHttpServer())
             .post(`/${GLOBAL_PREFIX}/posts`)
