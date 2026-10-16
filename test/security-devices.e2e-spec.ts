@@ -98,26 +98,10 @@ describe('Security devices (e2e)', () => {
             })
             .expect(200);
 
-         // Получаем массив cookie из ответа на вход с компьютера.
-         const computerLoginCookies: unknown =
-            computerLoginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(computerLoginCookies)) {
-            throw new Error('Set-Cookie header must be an array');
-         }
-
-         // Находим полную строку refresh cookie вместе с атрибутами.
-         const computerRefreshCookieWithAttributes = computerLoginCookies.find(
-            (cookie: string) => cookie.startsWith('refreshToken='),
+         // Получаем имя и значение refresh cookie сессии компьютера.
+         const computerRefreshTokenCookie = getRefreshTokenCookie(
+            computerLoginResponse.headers['set-cookie'],
          );
-
-         if (typeof computerRefreshCookieWithAttributes !== 'string') {
-            throw new Error('Refresh token cookie is missing');
-         }
-
-         // Оставляем только refreshToken=значение для отправки в запросе.
-         const computerRefreshTokenCookie =
-            computerRefreshCookieWithAttributes.split(';')[0];
 
          // Запрашиваем список сессий, используя cookie компьютера.
          const devicesResponse = await request(app.getHttpServer())
@@ -175,41 +159,15 @@ describe('Security devices (e2e)', () => {
             })
             .expect(200);
 
-         const computerLoginCookies: unknown =
-            computerLoginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(computerLoginCookies)) {
-            throw new Error('Computer Set-Cookie header must be an array');
-         }
-
-         const computerRefreshCookieWithAttributes = computerLoginCookies.find(
-            (cookie: string) => cookie.startsWith('refreshToken='),
+         // Получаем refresh cookie сессии компьютера.
+         const computerRefreshTokenCookie = getRefreshTokenCookie(
+            computerLoginResponse.headers['set-cookie'],
          );
 
-         if (typeof computerRefreshCookieWithAttributes !== 'string') {
-            throw new Error('Computer refresh token cookie is missing');
-         }
-
-         const computerRefreshTokenCookie =
-            computerRefreshCookieWithAttributes.split(';')[0];
-
-         const phoneLoginCookies: unknown =
-            phoneLoginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(phoneLoginCookies)) {
-            throw new Error('Phone Set-Cookie header must be an array');
-         }
-
-         const phoneRefreshCookieWithAttributes = phoneLoginCookies.find(
-            (cookie: string) => cookie.startsWith('refreshToken='),
+         // Получаем refresh cookie сессии телефона.
+         const phoneRefreshTokenCookie = getRefreshTokenCookie(
+            phoneLoginResponse.headers['set-cookie'],
          );
-
-         if (typeof phoneRefreshCookieWithAttributes !== 'string') {
-            throw new Error('Phone refresh token cookie is missing');
-         }
-
-         const phoneRefreshTokenCookie =
-            phoneRefreshCookieWithAttributes.split(';')[0];
 
          // С компьютера завершаем все остальные сессии.
          await request(app.getHttpServer())
@@ -281,26 +239,10 @@ describe('Security devices (e2e)', () => {
             })
             .expect(200);
 
-         // Получаем массив cookie компьютера.
-         const computerLoginCookies: unknown =
-            computerLoginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(computerLoginCookies)) {
-            throw new Error('Computer Set-Cookie header must be an array');
-         }
-
-         // Находим refresh cookie компьютера вместе с атрибутами.
-         const computerRefreshCookieWithAttributes = computerLoginCookies.find(
-            (cookie: string) => cookie.startsWith('refreshToken='),
+         // Получаем refresh cookie сессии компьютера.
+         const computerRefreshTokenCookie = getRefreshTokenCookie(
+            computerLoginResponse.headers['set-cookie'],
          );
-
-         if (typeof computerRefreshCookieWithAttributes !== 'string') {
-            throw new Error('Computer refresh token cookie is missing');
-         }
-
-         // Оставляем имя и значение cookie компьютера.
-         const computerRefreshTokenCookie =
-            computerRefreshCookieWithAttributes.split(';')[0];
 
          // Получаем список сессий перед удалением.
          const devicesBeforeDeletionResponse = await request(
@@ -383,45 +325,15 @@ describe('Security devices (e2e)', () => {
             })
             .expect(200);
 
-         // Получаем cookie первого пользователя.
-         const firstUserLoginCookies: unknown =
-            firstUserLoginResponse.headers['set-cookie'];
+         // Получаем refresh cookie первого пользователя.
+         const firstUserRefreshTokenCookie = getRefreshTokenCookie(
+            firstUserLoginResponse.headers['set-cookie'],
+         );
 
-         if (!Array.isArray(firstUserLoginCookies)) {
-            throw new Error('First user Set-Cookie header must be an array');
-         }
-
-         const firstUserRefreshCookieWithAttributes =
-            firstUserLoginCookies.find((cookie: string) =>
-               cookie.startsWith('refreshToken='),
-            );
-
-         if (typeof firstUserRefreshCookieWithAttributes !== 'string') {
-            throw new Error('First user refresh token cookie is missing');
-         }
-
-         const firstUserRefreshTokenCookie =
-            firstUserRefreshCookieWithAttributes.split(';')[0];
-
-         // Получаем cookie второго пользователя.
-         const secondUserLoginCookies: unknown =
-            secondUserLoginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(secondUserLoginCookies)) {
-            throw new Error('Second user Set-Cookie header must be an array');
-         }
-
-         const secondUserRefreshCookieWithAttributes =
-            secondUserLoginCookies.find((cookie: string) =>
-               cookie.startsWith('refreshToken='),
-            );
-
-         if (typeof secondUserRefreshCookieWithAttributes !== 'string') {
-            throw new Error('Second user refresh token cookie is missing');
-         }
-
-         const secondUserRefreshTokenCookie =
-            secondUserRefreshCookieWithAttributes.split(';')[0];
+         // Получаем refresh cookie второго пользователя.
+         const secondUserRefreshTokenCookie = getRefreshTokenCookie(
+            secondUserLoginResponse.headers['set-cookie'],
+         );
 
          // Второй пользователь получает список своих сессий.
          const secondUserDevicesBeforeResponse = await request(

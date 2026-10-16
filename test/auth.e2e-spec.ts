@@ -8,6 +8,10 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtService } from '@nestjs/jwt';
 import { UserAccountsConfig } from '../src/modules/user-accounts/config/user-accounts.config';
 import { createUserTestData } from './helpers/user-test-data';
+import {
+   getRefreshTokenCookie,
+   getRefreshTokenCookieWithAttributes,
+} from './helpers/refresh-token-cookie';
 
 describe('Auth (e2e)', () => {
    let app: INestApplication;
@@ -53,17 +57,9 @@ describe('Auth (e2e)', () => {
          // Проверяем, что access token не пустой.
          expect(response.body.accessToken).not.toBe('');
 
-         // Получаем заголовок с cookie.
-         const cookies: unknown = response.headers['set-cookie'];
-
-         // Проверяем наличие массива и уточняем тип для TypeScript.
-         if (!Array.isArray(cookies)) {
-            throw new Error('Set-Cookie header must be an array');
-         }
-
-         // Находим cookie с refresh token.
-         const refreshCookie = cookies.find((cookie: string) =>
-            cookie.startsWith('refreshToken='),
+         // Получаем refresh cookie вместе с атрибутами.
+         const refreshCookie = getRefreshTokenCookieWithAttributes(
+            response.headers['set-cookie'],
          );
 
          // Проверяем, что refresh token присутствует и не пустой.
@@ -308,28 +304,15 @@ describe('Auth (e2e)', () => {
             })
             .expect(200);
 
-         // Получаем cookie, установленную при входе.
-         const loginCookies: unknown = loginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(loginCookies)) {
-            throw new Error('Set-Cookie header must be an array');
-         }
-
-         const loginRefreshCookie = loginCookies.find((cookie: string) =>
-            cookie.startsWith('refreshToken='),
+         // Получаем имя и значение refresh cookie для следующего запроса.
+         const refreshTokenCookie = getRefreshTokenCookie(
+            loginResponse.headers['set-cookie'],
          );
-
-         if (typeof loginRefreshCookie !== 'string') {
-            throw new Error('Refresh token cookie is missing');
-         }
-
-         // Оставляем имя и значение cookie без атрибутов.
-         const cookieHeader = loginRefreshCookie.split(';')[0];
 
          // Отправляем refresh token для обновления токенов.
          const refreshResponse = await request(app.getHttpServer())
             .post(`/${GLOBAL_PREFIX}/auth/refresh-token`)
-            .set('Cookie', cookieHeader)
+            .set('Cookie', refreshTokenCookie)
             .expect(200);
 
          // Проверяем access token в теле ответа.
@@ -338,15 +321,9 @@ describe('Auth (e2e)', () => {
          });
          expect(refreshResponse.body.accessToken).not.toBe('');
 
-         // Проверяем refresh cookie в ответе.
-         const refreshCookies: unknown = refreshResponse.headers['set-cookie'];
-
-         if (!Array.isArray(refreshCookies)) {
-            throw new Error('Set-Cookie header must be an array');
-         }
-
-         const refreshCookie = refreshCookies.find((cookie: string) =>
-            cookie.startsWith('refreshToken='),
+         // Получаем новую refresh cookie вместе с атрибутами.
+         const refreshCookie = getRefreshTokenCookieWithAttributes(
+            refreshResponse.headers['set-cookie'],
          );
 
          expect(refreshCookie).toMatch(/^refreshToken=[^;]+;/);
@@ -421,24 +398,13 @@ describe('Auth (e2e)', () => {
             })
             .expect(200);
 
-         // Находим cookie с настоящим refresh token.
-         const loginCookies: unknown = loginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(loginCookies)) {
-            throw new Error('Set-Cookie header must be an array');
-         }
-
-         const loginRefreshCookie = loginCookies.find((cookie: string) =>
-            cookie.startsWith('refreshToken='),
+         // Получаем имя и значение refresh cookie.
+         const refreshTokenCookie = getRefreshTokenCookie(
+            loginResponse.headers['set-cookie'],
          );
 
-         if (typeof loginRefreshCookie !== 'string') {
-            throw new Error('Refresh token cookie is missing');
-         }
-
-         // Убираем атрибуты cookie, затем её имя и знак равенства.
-         const cookieHeader = loginRefreshCookie.split(';')[0];
-         const refreshToken = cookieHeader.slice('refreshToken='.length);
+         // Убираем имя cookie и знак равенства, оставляя только JWT.
+         const refreshToken = refreshTokenCookie.slice('refreshToken='.length);
 
          // Подменяем только подпись JWT.
          const tokenParts = refreshToken.split('.');
@@ -470,24 +436,13 @@ describe('Auth (e2e)', () => {
             })
             .expect(200);
 
-         // Получаем cookie с настоящим refresh token.
-         const loginCookies: unknown = loginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(loginCookies)) {
-            throw new Error('Set-Cookie header must be an array');
-         }
-
-         const loginRefreshCookie = loginCookies.find((cookie: string) =>
-            cookie.startsWith('refreshToken='),
+         // Получаем имя и значение refresh cookie.
+         const refreshTokenCookie = getRefreshTokenCookie(
+            loginResponse.headers['set-cookie'],
          );
 
-         if (typeof loginRefreshCookie !== 'string') {
-            throw new Error('Refresh token cookie is missing');
-         }
-
-         // Извлекаем значение токена из cookie.
-         const cookieHeader = loginRefreshCookie.split(';')[0];
-         const refreshToken = cookieHeader.slice('refreshToken='.length);
+         // Извлекаем только JWT для проверки и изменения срока действия.
+         const refreshToken = refreshTokenCookie.slice('refreshToken='.length);
 
          const jwtService = app.get(JwtService);
          const userAccountsConfig = app.get(UserAccountsConfig);
@@ -537,21 +492,10 @@ describe('Auth (e2e)', () => {
             })
             .expect(200);
 
-         const loginCookies: unknown = loginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(loginCookies)) {
-            throw new Error('Set-Cookie header must be an array');
-         }
-
-         const loginRefreshCookie = loginCookies.find((cookie: string) =>
-            cookie.startsWith('refreshToken='),
+         // Сохраняем refresh cookie, полученную до удаления пользователя.
+         const refreshTokenCookie = getRefreshTokenCookie(
+            loginResponse.headers['set-cookie'],
          );
-
-         if (typeof loginRefreshCookie !== 'string') {
-            throw new Error('Refresh token cookie is missing');
-         }
-
-         const cookieHeader = loginRefreshCookie.split(';')[0];
 
          // Удаляем пользователя с правильной Basic Auth.
          await request(app.getHttpServer())
@@ -562,7 +506,7 @@ describe('Auth (e2e)', () => {
          // Пытаемся обновить токены с ранее полученной cookie.
          const response = await request(app.getHttpServer())
             .post(`/${GLOBAL_PREFIX}/auth/refresh-token`)
-            .set('Cookie', cookieHeader)
+            .set('Cookie', refreshTokenCookie)
             .expect(401);
 
          // Проверяем, что токены не выданы.
@@ -585,35 +529,22 @@ describe('Auth (e2e)', () => {
             })
             .expect(200);
 
-         // Получаем refresh cookie из ответа на вход.
-         const loginCookies: unknown = loginResponse.headers['set-cookie'];
-
-         if (!Array.isArray(loginCookies)) {
-            throw new Error('Set-Cookie header must be an array');
-         }
-
-         const loginRefreshCookie = loginCookies.find((cookie: string) =>
-            cookie.startsWith('refreshToken='),
+         // Сохраняем refresh cookie сессии, из которой будем выходить.
+         const refreshTokenCookie = getRefreshTokenCookie(
+            loginResponse.headers['set-cookie'],
          );
-
-         if (typeof loginRefreshCookie !== 'string') {
-            throw new Error('Refresh token cookie is missing');
-         }
-
-         // Сохраняем имя и значение cookie без атрибутов.
-         const cookieHeader = loginRefreshCookie.split(';')[0];
 
          // Выходим и проверяем, что сервер очищает refresh cookie.
          await request(app.getHttpServer())
             .post(`/${GLOBAL_PREFIX}/auth/logout`)
-            .set('Cookie', cookieHeader)
+            .set('Cookie', refreshTokenCookie)
             .expect(204)
             .expect('Set-Cookie', /^refreshToken=;/);
 
          // Повторно отправляем прежний токен после выхода.
          await request(app.getHttpServer())
             .post(`/${GLOBAL_PREFIX}/auth/refresh-token`)
-            .set('Cookie', cookieHeader)
+            .set('Cookie', refreshTokenCookie)
             .expect(401);
       });
 
