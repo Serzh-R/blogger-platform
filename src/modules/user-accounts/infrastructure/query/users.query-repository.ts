@@ -7,12 +7,14 @@ import type { UserModelType } from '../../domain/user.entity';
 import { UserViewDto } from '../../api/view-dto/user.view-dto';
 import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../core/dto/paginated.view-dto';
+import { PostgresService } from '../../../../core/postgres.service';
 
 @Injectable()
 export class UsersQueryRepository {
    constructor(
       @InjectModel(User.name)
       private readonly UserModel: UserModelType,
+      private readonly postgresService: PostgresService,
    ) {}
 
    async findById(id: string): Promise<UserViewDto | null> {
@@ -35,6 +37,40 @@ export class UsersQueryRepository {
    async findAll(
       query: GetUsersQueryParams,
    ): Promise<PaginatedViewDto<UserViewDto>> {
+      const sqlValues: (string | number)[] = [];
+      const sqlSearchConditions: string[] = [];
+
+      if (query.searchLoginTerm) {
+         sqlValues.push(`%${query.searchLoginTerm}%`);
+
+         sqlSearchConditions.push('login ILIKE $' + sqlValues.length);
+      }
+
+      if (query.searchEmailTerm) {
+         sqlValues.push(`%${query.searchEmailTerm}%`);
+
+         sqlSearchConditions.push('email ILIKE $' + sqlValues.length);
+      }
+
+      let whereCondition = 'deleted_at IS NULL';
+
+      if (sqlSearchConditions.length > 0) {
+         whereCondition =
+            whereCondition + ' AND (' + sqlSearchConditions.join(' OR ') + ')';
+      }
+
+      const countSql =
+         'SELECT COUNT(*) AS total_count FROM users WHERE ' + whereCondition;
+
+      const countResult = await this.postgresService.pool.query(
+         countSql,
+         sqlValues,
+      );
+
+      const sqlTotalCount = Number(countResult.rows[0].total_count)
+
+      console.log(sqlTotalCount);
+
       const filter: QueryFilter<User> = {
          deletedAt: null,
       };

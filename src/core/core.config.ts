@@ -28,6 +28,22 @@ export class CoreConfig {
 
    smtpFrom: string;
 
+   @IsNotEmpty({ message: 'PG_HOST is not defined' })
+   pgHost: string;
+
+   @IsInt({ message: 'PG_PORT must be a valid port number' })
+   @Min(1, { message: 'PG_PORT must be a valid port number' })
+   pgPort: number;
+
+   @IsNotEmpty({ message: 'PG_DATABASE is not defined' })
+   pgDatabase: string;
+
+   @IsNotEmpty({ message: 'PG_USER is not defined' })
+   pgUser: string;
+
+   @IsNotEmpty({ message: 'PG_PASSWORD is not defined' })
+   pgPassword: string;
+
    constructor(private configService: ConfigService<any, true>) {
       this.mongoUrl = this.configService.get('MONGO_URL');
       this.dbName =
@@ -39,7 +55,11 @@ export class CoreConfig {
       this.smtpPassword = this.configService.get('SMTP_PASSWORD');
       this.smtpSecure = this.configService.get('SMTP_SECURE') === 'true';
       this.smtpFrom = this.configService.get('SMTP_FROM') || this.smtpUser;
-
+      this.pgHost = this.configService.get('PG_HOST');
+      this.pgPort = Number(this.configService.get('PG_PORT'));
+      this.pgDatabase = this.configService.get('PG_DATABASE');
+      this.pgUser = this.configService.get('PG_USER');
+      this.pgPassword = this.configService.get('PG_PASSWORD');
       configValidationUtility.validateConfig(this);
    }
 }
