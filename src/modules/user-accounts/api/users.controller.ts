@@ -22,7 +22,7 @@ import { CommandBus } from '@nestjs/cqrs';
 import { DeleteUserCommand } from '../application/usecases/delete-user.usecase';
 import { CreateUserCommand } from '../application/usecases/create-user.usecase';
 
-@Controller('users')
+@Controller('sa/users')
 @UseGuards(BasicAuthGuard)
 export class UsersController {
    constructor(

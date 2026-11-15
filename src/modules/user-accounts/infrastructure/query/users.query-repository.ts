@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
-import type { QueryFilter } from 'mongoose';
 import { User } from '../../domain/user.entity';
 import type { UserModelType } from '../../domain/user.entity';
 import { UserViewDto } from '../../api/view-dto/user.view-dto';
 import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../core/dto/paginated.view-dto';
 import { PostgresService } from '../../../../core/postgres.service';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class UsersQueryRepository {
@@ -18,7 +17,37 @@ export class UsersQueryRepository {
    ) {}
 
    async findById(id: string): Promise<UserViewDto | null> {
-      if (!Types.ObjectId.isValid(id)) {
+      //*****************************************************************
+      if (!isUUID(id)) {
+         return null;
+      }
+
+      const findUserByIdSql =
+         'SELECT id, login, email, created_at\n' +
+         'FROM users\n' +
+         'WHERE id = $1 AND deleted_at IS NULL';
+
+      const userResponse = await this.postgresService.pool.query(
+         findUserByIdSql,
+         [id],
+      );
+
+      const foundUser = userResponse.rows[0];
+
+      if (!foundUser) {
+         return null;
+      }
+
+      return {
+         id: foundUser.id,
+         login: foundUser.login,
+         email: foundUser.email,
+         createdAt: foundUser.created_at.toISOString(),
+      };
+
+      //*****************************************************************
+
+      /* if (!Types.ObjectId.isValid(id)) {
          return null;
       }
 
@@ -31,7 +60,7 @@ export class UsersQueryRepository {
          return null;
       }
 
-      return UserViewDto.mapToView(user);
+      return UserViewDto.mapToView(user);*/
    }
 
    async findAll(
@@ -59,19 +88,59 @@ export class UsersQueryRepository {
             whereCondition + ' AND (' + sqlSearchConditions.join(' OR ') + ')';
       }
 
-      const countSql =
+      const sqlQueryText =
          'SELECT COUNT(*) AS total_count FROM users WHERE ' + whereCondition;
 
-      const countResult = await this.postgresService.pool.query(
-         countSql,
+      const databaseResponse = await this.postgresService.pool.query(
+         sqlQueryText,
          sqlValues,
       );
 
-      const sqlTotalCount = Number(countResult.rows[0].total_count)
+      const foundUsersCount = Number(databaseResponse.rows[0].total_count);
 
-      console.log(sqlTotalCount);
+      const pageSizePosition = sqlValues.push(query.pageSize);
 
-      const filter: QueryFilter<User> = {
+      const pageSizePlaceholder = '$' + pageSizePosition;
+
+      const offsetPosition = sqlValues.push(query.calculateSkip());
+
+      const offsetPlaceholder = '$' + offsetPosition;
+
+      const paginationSql =
+         'LIMIT ' + pageSizePlaceholder + ' OFFSET ' + offsetPlaceholder;
+
+      const sortColumn =
+         query.sortBy === 'createdAt' ? 'created_at' : query.sortBy;
+
+      const orderBySql = 'ORDER BY ' + sortColumn + ' ' + query.sortDirection;
+
+      const usersPageQueryText =
+         'SELECT id, login, email, created_at FROM users WHERE ' +
+         whereCondition +
+         ' ' +
+         orderBySql +
+         ' ' +
+         paginationSql;
+
+      const usersPageResponse = await this.postgresService.pool.query(
+         usersPageQueryText,
+         sqlValues,
+      );
+
+      //console.log('Пользователи из PostgreSQL:', usersPageResponse.rows);
+
+      const usersPageItems = usersPageResponse.rows.map((user) => ({
+         id: user.id,
+         login: user.login,
+         email: user.email,
+         createdAt: user.created_at.toISOString(),
+      }));
+
+      //console.log('Пользователи для API:', usersPageItems);
+
+      // ********************************************************************
+
+      /*const filter: QueryFilter<User> = {
          deletedAt: null,
       };
 
@@ -108,13 +177,13 @@ export class UsersQueryRepository {
          .skip(query.calculateSkip())
          .limit(query.pageSize);
 
-      const items = users.map((user) => UserViewDto.mapToView(user));
+      const items = users.map((user) => UserViewDto.mapToView(user));*/
 
       return PaginatedViewDto.mapToView({
-         items,
+         items: usersPageItems,
          page: query.pageNumber,
          pageSize: query.pageSize,
-         totalCount,
+         totalCount: foundUsersCount,
       });
    }
 }

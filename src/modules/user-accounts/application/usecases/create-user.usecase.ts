@@ -20,8 +20,10 @@ export class CreateUserUseCase implements ICommandHandler<
    async execute({ dto }: CreateUserCommand): Promise<string> {
       const user = await this.usersFactory.create(dto);
 
-      await this.usersRepository.save(user);
+      return this.usersRepository.create(user);
 
-      return user._id.toString();
+      //await this.usersRepository.save(user);
+
+      //return user._id.toString();
    }
 }
