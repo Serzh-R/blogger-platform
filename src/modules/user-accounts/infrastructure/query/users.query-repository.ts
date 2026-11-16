@@ -17,7 +17,6 @@ export class UsersQueryRepository {
    ) {}
 
    async findById(id: string): Promise<UserViewDto | null> {
-      //*****************************************************************
       if (!isUUID(id)) {
          return null;
       }
@@ -44,23 +43,6 @@ export class UsersQueryRepository {
          email: foundUser.email,
          createdAt: foundUser.created_at.toISOString(),
       };
-
-      //*****************************************************************
-
-      /* if (!Types.ObjectId.isValid(id)) {
-         return null;
-      }
-
-      const user = await this.UserModel.findOne({
-         _id: id,
-         deletedAt: null,
-      });
-
-      if (!user) {
-         return null;
-      }
-
-      return UserViewDto.mapToView(user);*/
    }
 
    async findAll(

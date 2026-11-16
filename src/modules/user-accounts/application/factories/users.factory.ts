@@ -18,7 +18,7 @@ export class UsersFactory {
    ) {}
 
    async create(dto: CreateUserInputDto): Promise<UserDocument> {
-      const userByLogin = await this.usersRepository.findByLogin(dto.login);
+      const userByLogin = await this.usersRepository.isLoginTaken(dto.login);
 
       if (userByLogin) {
          throw new DomainException({
@@ -33,7 +33,7 @@ export class UsersFactory {
          });
       }
 
-      const userByEmail = await this.usersRepository.findByEmail(dto.email);
+      const userByEmail = await this.usersRepository.isEmailTaken(dto.email);
 
       if (userByEmail) {
          throw new DomainException({

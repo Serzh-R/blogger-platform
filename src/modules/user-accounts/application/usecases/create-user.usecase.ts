@@ -21,9 +21,5 @@ export class CreateUserUseCase implements ICommandHandler<
       const user = await this.usersFactory.create(dto);
 
       return this.usersRepository.create(user);
-
-      //await this.usersRepository.save(user);
-
-      //return user._id.toString();
    }
 }
