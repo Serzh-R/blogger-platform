@@ -63,13 +63,11 @@ export class UsersRepository {
    }
 
    async isLoginTaken(login: string): Promise<boolean> {
-      const findActiveUserByLoginSql =
-         'SELECT login\n' +
-         '    FROM users\n' +
-         '    WHERE login = $1 AND deleted_at IS NULL';
+      const findUserByLoginSql =
+         'SELECT login\n' + '    FROM users\n' + '    WHERE login = $1';
 
       const loginSearchResult = await this.postgresService.pool.query(
-         findActiveUserByLoginSql,
+         findUserByLoginSql,
          [login],
       );
 
@@ -77,13 +75,11 @@ export class UsersRepository {
    }
 
    async isEmailTaken(email: string): Promise<boolean> {
-      const findActiveUserByEmailSql =
-         'SELECT email\n' +
-         '    FROM users\n' +
-         '    WHERE email = $1 AND deleted_at IS NULL';
+      const findUserByEmailSql =
+         'SELECT email\n' + '    FROM users\n' + '    WHERE email = $1';
 
       const emailSearchResult = await this.postgresService.pool.query(
-         findActiveUserByEmailSql,
+         findUserByEmailSql,
          [email],
       );
 
