@@ -29,12 +29,19 @@ export class UsersRepository {
 
    async create(user: User) {
       const insertUserSql = `
-      INSERT INTO users (login, email, password_hash)
-      VALUES ($1, $2, $3)
+      INSERT INTO users (login, email, password_hash, email_confirmation_code, email_confirmation_expiration_date, email_confirmation_is_confirmed)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id
    `;
 
-      const userValues = [user.login, user.email, user.passwordHash];
+      const userValues = [
+         user.login,
+         user.email,
+         user.passwordHash,
+         user.emailConfirmation.confirmationCode,
+         user.emailConfirmation.expirationDate,
+         user.emailConfirmation.isConfirmed,
+      ];
 
       const insertResponse = await this.postgresService.pool.query(
          insertUserSql,
@@ -86,6 +93,53 @@ export class UsersRepository {
       return emailSearchResult.rows.length > 0;
    }
 
+   async findByConfirmationCode(
+      confirmationCode: string,
+      //): Promise<UserDocument | null> {
+   ): Promise<User | null> {
+      const findUserByConfirmationCodeSql =
+         'SELECT id, email_confirmation_code, email_confirmation_expiration_date, email_confirmation_is_confirmed\n' +
+         '\tFROM users\n' +
+         '\tWHERE email_confirmation_code = $1 AND deleted_at IS NULL';
+
+      const userResponse = await this.postgresService.pool.query(
+         findUserByConfirmationCodeSql,
+         [confirmationCode],
+      );
+
+      const foundUser = userResponse.rows[0];
+
+      if (!foundUser) {
+         return null;
+      }
+
+      const user = new User();
+
+      user.id = foundUser.id;
+
+      user.emailConfirmation = {
+         confirmationCode: foundUser.email_confirmation_code,
+         expirationDate: foundUser.email_confirmation_expiration_date,
+         isConfirmed: foundUser.email_confirmation_is_confirmed,
+      };
+
+      /*return this.UserModel.findOne({
+         'emailConfirmation.confirmationCode': confirmationCode,
+         deletedAt: null,
+      });*/
+
+      return user;
+   }
+
+   async saveEmailConfirmation(user: User): Promise<void> {
+      const confirmEmailSql =
+         'UPDATE users\n' +
+         '\tSET updated_at = now(), email_confirmation_is_confirmed = true\n' +
+         '\tWHERE id = $1 and deleted_at IS NULL';
+
+      await this.postgresService.pool.query(confirmEmailSql, [user.id]);
+   }
+
    //****************************************************************************
 
    async save(user: UserDocument): Promise<void> {
@@ -102,15 +156,6 @@ export class UsersRepository {
    async findByEmail(email: string): Promise<UserDocument | null> {
       return this.UserModel.findOne({
          email,
-         deletedAt: null,
-      });
-   }
-
-   async findByConfirmationCode(
-      confirmationCode: string,
-   ): Promise<UserDocument | null> {
-      return this.UserModel.findOne({
-         'emailConfirmation.confirmationCode': confirmationCode,
          deletedAt: null,
       });
    }

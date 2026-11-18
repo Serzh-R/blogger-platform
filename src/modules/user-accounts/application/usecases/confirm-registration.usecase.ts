@@ -34,6 +34,8 @@ export class ConfirmRegistrationUseCase implements ICommandHandler<
          });
       }
 
-      await this.usersRepository.save(user);
+      //await this.usersRepository.save(user);
+
+      await this.usersRepository.saveEmailConfirmation(user);
    }
 }

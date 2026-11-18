@@ -31,6 +31,8 @@ export const emailConstraints = {
    versionKey: false,
 })
 export class User {
+   id: string;
+
    @Prop({ type: String, required: true, ...loginConstraints })
    login: string;
 

@@ -28,10 +28,13 @@ export class RegisterUserUseCase implements ICommandHandler<
 
       user.setConfirmationCode(confirmationCode, expirationDate);
 
-      await this.usersRepository.save(user);
+      //await this.usersRepository.save(user);
+
+      await this.usersRepository.create(user);
 
       void this.emailService
          .sendConfirmationEmail(user.email, confirmationCode)
+
          .catch((error: unknown) => {
             console.error('Confirmation email sending failed', error);
          });
