@@ -14,17 +14,6 @@ export class UsersRepository {
       private readonly postgresService: PostgresService,
    ) {}
 
-   async findById(id: string): Promise<UserDocument | null> {
-      if (!Types.ObjectId.isValid(id)) {
-         return null;
-      }
-
-      return this.UserModel.findOne({
-         _id: id,
-         deletedAt: null,
-      });
-   }
-
    //*** SQL **********************************************************************
 
    async create(user: User) {
@@ -140,7 +129,49 @@ export class UsersRepository {
       await this.postgresService.pool.query(confirmEmailSql, [user.id]);
    }
 
+   async findByLoginOrEmail(
+      loginOrEmail: string,
+      //): Promise<UserDocument | null> {
+   ): Promise<{ id: string; passwordHash: string } | null> {
+      const findUserByLoginOrEmailSql =
+         'SELECT id, password_hash\n' +
+         '\tFROM users\n' +
+         '\tWHERE deleted_at IS NULL AND (login = $1 OR email = $1)';
+
+      const resultResponse = await this.postgresService.pool.query(
+         findUserByLoginOrEmailSql,
+         [loginOrEmail],
+      );
+
+      const foundUser = resultResponse.rows[0];
+
+      if (!foundUser) {
+         return null;
+      }
+
+      return {
+         id: foundUser.id,
+         passwordHash: foundUser.password_hash,
+      };
+
+      /*return this.UserModel.findOne({
+         deletedAt: null,
+         $or: [{ login: loginOrEmail }, { email: loginOrEmail }],
+      });*/
+   }
+
    //****************************************************************************
+
+   async findById(id: string): Promise<UserDocument | null> {
+      if (!Types.ObjectId.isValid(id)) {
+         return null;
+      }
+
+      return this.UserModel.findOne({
+         _id: id,
+         deletedAt: null,
+      });
+   }
 
    async save(user: UserDocument): Promise<void> {
       await user.save();
@@ -157,15 +188,6 @@ export class UsersRepository {
       return this.UserModel.findOne({
          email,
          deletedAt: null,
-      });
-   }
-
-   async findByLoginOrEmail(
-      loginOrEmail: string,
-   ): Promise<UserDocument | null> {
-      return this.UserModel.findOne({
-         deletedAt: null,
-         $or: [{ login: loginOrEmail }, { email: loginOrEmail }],
       });
    }
 
