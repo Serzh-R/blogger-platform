@@ -20,7 +20,7 @@ export class ResendRegistrationEmailUseCase implements ICommandHandler<
    ) {}
 
    async execute({ email }: ResendRegistrationEmailCommand): Promise<void> {
-      const user = await this.usersRepository.findByEmail(email);
+      const user = await this.usersRepository.findByEmailForConfirmation(email);
 
       if (!user) {
          throw new DomainException({
@@ -57,8 +57,21 @@ export class ResendRegistrationEmailUseCase implements ICommandHandler<
          });
       }
 
-      await this.usersRepository.save(user);
+      const updateResult =
+         await this.usersRepository.updateEmailConfirmation(user);
 
+      if (!updateResult) {
+         throw new DomainException({
+            code: DomainExceptionCode.BadRequest,
+            message: 'Could not save the confirmation code',
+            extensions: [
+               {
+                  field: 'email',
+                  message: 'Could not save the confirmation code',
+               },
+            ],
+         });
+      }
       void this.emailService
          .sendConfirmationEmail(user.email, confirmationCode)
          .catch((error: unknown) => {

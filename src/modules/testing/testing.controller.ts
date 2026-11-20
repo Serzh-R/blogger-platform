@@ -1,12 +1,14 @@
 import { Controller, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import type { Connection } from 'mongoose';
+import { PostgresService } from '../../core/postgres.service';
 
 @Controller('testing')
 export class TestingController {
    constructor(
       @InjectConnection()
       private readonly databaseConnection: Connection,
+      private readonly postgresService: PostgresService,
    ) {}
 
    @Delete('all-data')
@@ -19,5 +21,11 @@ export class TestingController {
       );
 
       await Promise.all(deletePromises);
+
+      // ***** SQL *******************************************
+
+      const deleteUsersSql = 'DELETE FROM users';
+
+      await this.postgresService.pool.query(deleteUsersSql);
    }
 }
