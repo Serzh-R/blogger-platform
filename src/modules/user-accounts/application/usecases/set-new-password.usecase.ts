@@ -43,6 +43,22 @@ export class SetNewPasswordUseCase implements ICommandHandler<
 
       user.setNewPasswordHash(passwordHash);
 
-      await this.usersRepository.save(user);
+      const resultUpdate = await this.usersRepository.updatePasswordHash(
+         user,
+         dto.recoveryCode,
+      );
+
+      if (!resultUpdate) {
+         throw new DomainException({
+            code: DomainExceptionCode.BadRequest,
+            message: 'Recovery code is incorrect or expired',
+            extensions: [
+               {
+                  field: 'recoveryCode',
+                  message: 'Recovery code is incorrect or expired',
+               },
+            ],
+         });
+      }
    }
 }

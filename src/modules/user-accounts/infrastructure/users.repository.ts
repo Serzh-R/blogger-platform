@@ -181,6 +181,11 @@ export class UsersRepository {
          isConfirmed: foundUser.email_confirmation_is_confirmed,
       };
 
+      user.passwordRecovery = {
+         recoveryCode: null,
+         expirationDate: null,
+      };
+
       return user;
    }
 
@@ -202,14 +207,80 @@ export class UsersRepository {
       return updateResponse.rowCount === 1;
    }
 
+   async updatePasswordRecoveryCode(user: User): Promise<boolean> {
+      const confirmUpdatePasswordSql =
+         'UPDATE users\n' +
+         '\tSET updated_at=now(), password_recovery_code=$2, password_recovery_expiration_date=$3\n' +
+         '\tWHERE id = $1 AND deleted_at IS NULL';
+
+      const updateResponse = await this.postgresService.pool.query(
+         confirmUpdatePasswordSql,
+         [
+            user.id,
+            user.passwordRecovery.recoveryCode,
+            user.passwordRecovery.expirationDate,
+         ],
+      );
+
+      return updateResponse.rowCount === 1;
+   }
+
+   async findByPasswordRecoveryCode(
+      recoveryCode: string,
+   ): Promise<User | null> {
+      const findByPasswordRecoverySql =
+         'SELECT id, password_recovery_code, password_recovery_expiration_date\n' +
+         '\tFROM users\n' +
+         '\tWHERE password_recovery_code = $1 AND deleted_at IS NULL';
+
+      const resultResponse = await this.postgresService.pool.query(
+         findByPasswordRecoverySql,
+         [recoveryCode],
+      );
+
+      const foundUser = resultResponse.rows[0];
+
+      if (!foundUser) {
+         return null;
+      }
+
+      const user = new User();
+
+      user.id = foundUser.id;
+
+      user.passwordRecovery = {
+         recoveryCode: foundUser.password_recovery_code,
+         expirationDate: foundUser.password_recovery_expiration_date,
+      };
+
+      return user;
+   }
+
+   async updatePasswordHash(
+      user: User,
+      recoveryCode: string,
+   ): Promise<boolean> {
+      const confirmUpdatePasswordHashSql =
+         'UPDATE users\n' +
+         '\tSET updated_at=now(), password_hash=$2, password_recovery_code=null, password_recovery_expiration_date=null' +
+         '\tWHERE id = $1 AND password_recovery_code = $3 AND deleted_at IS NULL AND password_recovery_expiration_date > now()';
+
+      const updateResponse = await this.postgresService.pool.query(
+         confirmUpdatePasswordHashSql,
+         [user.id, user.passwordHash, recoveryCode],
+      );
+
+      return updateResponse.rowCount === 1;
+   }
+
    //****************************************************************************
 
-   async findByEmail(email: string): Promise<UserDocument | null> {
+   /*async findByEmail(email: string): Promise<UserDocument | null> {
       return this.UserModel.findOne({
          email,
          deletedAt: null,
       });
-   }
+   }*/
 
    async findById(id: string): Promise<UserDocument | null> {
       if (!Types.ObjectId.isValid(id)) {
@@ -226,19 +297,19 @@ export class UsersRepository {
       await user.save();
    }
 
-   async findByLogin(login: string): Promise<UserDocument | null> {
+   /*async findByLogin(login: string): Promise<UserDocument | null> {
       return this.UserModel.findOne({
          login,
          deletedAt: null,
       });
-   }
+   }*/
 
-   async findByPasswordRecoveryCode(
+   /*async findByPasswordRecoveryCode(
       recoveryCode: string,
    ): Promise<UserDocument | null> {
       return this.UserModel.findOne({
          'passwordRecovery.recoveryCode': recoveryCode,
          deletedAt: null,
       });
-   }
+   }*/
 }

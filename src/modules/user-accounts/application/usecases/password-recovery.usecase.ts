@@ -18,7 +18,7 @@ export class PasswordRecoveryUseCase implements ICommandHandler<
    ) {}
 
    async execute({ email }: PasswordRecoveryCommand): Promise<void> {
-      const user = await this.usersRepository.findByEmail(email);
+      const user = await this.usersRepository.findByEmailForConfirmation(email);
 
       if (!user) {
          return;
@@ -30,7 +30,12 @@ export class PasswordRecoveryUseCase implements ICommandHandler<
 
       user.setPasswordRecoveryCode(recoveryCode, expirationDate);
 
-      await this.usersRepository.save(user);
+      const updateResult =
+         await this.usersRepository.updatePasswordRecoveryCode(user);
+
+      if (!updateResult) {
+         return;
+      }
 
       void this.emailService
          .sendPasswordRecoveryEmail(user.email, recoveryCode)
