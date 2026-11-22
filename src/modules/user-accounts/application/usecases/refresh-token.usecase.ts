@@ -65,7 +65,15 @@ export class RefreshTokenUseCase implements ICommandHandler<
          new Date(refreshPayload.exp * 1000),
       );
 
-      await this.deviceSessionsRepository.save(session);
+      const wasUpdated =
+         await this.deviceSessionsRepository.updateDates(session);
+
+      if (!wasUpdated) {
+         throw new DomainException({
+            code: DomainExceptionCode.Unauthorized,
+            message: 'Unauthorized',
+         });
+      }
 
       return { accessToken, refreshToken };
    }

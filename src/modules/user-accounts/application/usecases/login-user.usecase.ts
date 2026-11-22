@@ -67,7 +67,7 @@ export class LoginUserUseCase implements ICommandHandler<
          expirationDate: new Date(refreshPayload.exp * 1000),
       });
 
-      await this.deviceSessionsRepository.save(session);
+      await this.deviceSessionsRepository.create(session);
 
       return { accessToken, refreshToken };
    }

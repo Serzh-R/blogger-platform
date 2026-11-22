@@ -293,9 +293,9 @@ export class UsersRepository {
       });
    }
 
-   async save(user: UserDocument): Promise<void> {
+   /*async save(user: UserDocument): Promise<void> {
       await user.save();
-   }
+   }*/
 
    /*async findByLogin(login: string): Promise<UserDocument | null> {
       return this.UserModel.findOne({
