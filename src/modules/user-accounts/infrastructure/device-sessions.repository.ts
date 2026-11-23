@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { DeviceSession } from '../domain/device-session.entity';
-import type {
-   DeviceSessionDocument,
-   DeviceSessionModelType,
-} from '../domain/device-session.entity';
+import type { DeviceSessionModelType } from '../domain/device-session.entity';
 import { PostgresService } from '../../../core/postgres.service';
 
 @Injectable()
@@ -78,6 +75,32 @@ export class DeviceSessionsRepository {
       return updateResponse.rowCount === 1;
    }
 
+   async deleteByDeviceId(deviceId: string): Promise<boolean> {
+      const deleteSessionSql =
+         'DELETE FROM device_sessions\n' + '\tWHERE device_id = $1';
+
+      const deleteResponse = await this.postgresService.pool.query(
+         deleteSessionSql,
+         [deviceId],
+      );
+
+      return deleteResponse.rowCount === 1;
+   }
+
+   async deleteOtherSessions(
+      userId: string,
+      currentDeviceId: string,
+   ): Promise<void> {
+      const deleteOtherSessionSql =
+         'DELETE FROM device_sessions\n' +
+         '\tWHERE device_id <> $1 AND user_id = $2';
+
+      await this.postgresService.pool.query(deleteOtherSessionSql, [
+         currentDeviceId,
+         userId,
+      ]);
+   }
+
    // *****************************************************************
 
    /*async findByDeviceId(
@@ -86,17 +109,17 @@ export class DeviceSessionsRepository {
       return this.DeviceSessionModel.findOne({ deviceId });
    }*/
 
-   async save(session: DeviceSessionDocument): Promise<void> {
+   /*async save(session: DeviceSessionDocument): Promise<void> {
       await session.save();
-   }
+   }*/
 
-   async deleteByDeviceId(deviceId: string): Promise<boolean> {
+   /* async deleteByDeviceId(deviceId: string): Promise<boolean> {
       const result = await this.DeviceSessionModel.deleteOne({ deviceId });
 
       return result.deletedCount === 1;
-   }
+   }*/
 
-   async deleteOtherSessions(
+   /*async deleteOtherSessions(
       userId: string,
       currentDeviceId: string,
    ): Promise<void> {
@@ -104,5 +127,5 @@ export class DeviceSessionsRepository {
          userId,
          deviceId: { $ne: currentDeviceId },
       });
-   }
+   }*/
 }

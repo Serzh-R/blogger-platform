@@ -4,7 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { Request } from 'express';
 import { UserAccountsConfig } from '../../config/user-accounts.config';
 import { DeviceSessionsRepository } from '../../infrastructure/device-sessions.repository';
-import { UsersRepository } from '../../infrastructure/users.repository';
+import { UsersQueryRepository } from '../../infrastructure/query/users.query-repository';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
@@ -13,7 +13,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
 ) {
    constructor(
       private readonly deviceSessionsRepository: DeviceSessionsRepository,
-      private readonly usersRepository: UsersRepository,
+      private readonly usersQueryRepository: UsersQueryRepository,
       userAccountsConfig: UserAccountsConfig,
    ) {
       super({
@@ -63,7 +63,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
          return null;
       }
 
-      const user = await this.usersRepository.findById(payload.userId);
+      const user = await this.usersQueryRepository.findById(payload.userId);
 
       if (!user) {
          return null;

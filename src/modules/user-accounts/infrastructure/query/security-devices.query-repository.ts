@@ -1,22 +1,26 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { DeviceSession } from '../../domain/device-session.entity';
-import type { DeviceSessionModelType } from '../../domain/device-session.entity';
 import { DeviceSessionViewDto } from '../../api/view-dto/device-session.view-dto';
+import { PostgresService } from '../../../../core/postgres.service';
 
 @Injectable()
 export class SecurityDevicesQueryRepository {
-   constructor(
-      @InjectModel(DeviceSession.name)
-      private readonly DeviceSessionModel: DeviceSessionModelType,
-   ) {}
+   constructor(private readonly postgresService: PostgresService) {}
 
    async findAllByUserId(userId: string): Promise<DeviceSessionViewDto[]> {
-      const sessions = await this.DeviceSessionModel.find({
-         userId,
-         expirationDate: { $gt: new Date() },
-      });
+      const findAllActiveSessionByUserId =
+         'SELECT device_id, ip, title, last_active_date\n' +
+         '\tFROM device_sessions\n' +
+         '\tWHERE user_id = $1 AND expiration_date > now()';
 
-      return sessions.map((session) => DeviceSessionViewDto.mapToView(session));
+      const resultResponse = await this.postgresService.pool.query(
+         findAllActiveSessionByUserId,
+         [userId],
+      );
+
+      const finedSession = resultResponse.rows;
+
+      return finedSession.map((session) =>
+         DeviceSessionViewDto.mapToView(session),
+      );
    }
 }
