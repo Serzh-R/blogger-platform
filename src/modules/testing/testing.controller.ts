@@ -24,6 +24,10 @@ export class TestingController {
 
       // ***** SQL *******************************************
 
+      const deleteDeviseSessionsSql = 'DELETE FROM device_sessions';
+
+      await this.postgresService.pool.query(deleteDeviseSessionsSql);
+
       const deleteUsersSql = 'DELETE FROM users';
 
       await this.postgresService.pool.query(deleteUsersSql);

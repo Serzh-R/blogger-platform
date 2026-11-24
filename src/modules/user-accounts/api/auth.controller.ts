@@ -31,7 +31,7 @@ import { LoginUserCommand } from '../application/usecases/login-user.usecase';
 import { RefreshTokenCommand } from '../application/usecases/refresh-token.usecase';
 import { RefreshTokenGuard } from '../guards/refresh/refresh-token.guard';
 import { LogoutUserCommand } from '../application/usecases/logout-user.usecase';
-import { ThrottlerGuard } from '@nestjs/throttler';
+//import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -42,7 +42,7 @@ export class AuthController {
 
    @Post('registration')
    @HttpCode(HttpStatus.NO_CONTENT)
-   @UseGuards(ThrottlerGuard)
+   //@UseGuards(ThrottlerGuard)
    async registration(@Body() body: CreateUserInputDto): Promise<void> {
       await this.commandBus.execute<RegisterUserCommand, void>(
          new RegisterUserCommand(body),
@@ -51,7 +51,7 @@ export class AuthController {
 
    @Post('registration-confirmation')
    @HttpCode(HttpStatus.NO_CONTENT)
-   @UseGuards(ThrottlerGuard)
+   //@UseGuards(ThrottlerGuard)
    async registrationConfirmation(
       @Body() body: RegistrationConfirmationInputDto,
    ): Promise<void> {
@@ -62,7 +62,7 @@ export class AuthController {
 
    @Post('registration-email-resending')
    @HttpCode(HttpStatus.NO_CONTENT)
-   @UseGuards(ThrottlerGuard)
+   //@UseGuards(ThrottlerGuard)
    async registrationEmailResending(
       @Body() body: RegistrationEmailResendingInputDto,
    ): Promise<void> {
@@ -73,7 +73,7 @@ export class AuthController {
 
    @Post('new-password')
    @HttpCode(HttpStatus.NO_CONTENT)
-   @UseGuards(ThrottlerGuard)
+   //@UseGuards(ThrottlerGuard)
    async setNewPassword(@Body() dto: NewPasswordInputDto): Promise<void> {
       await this.commandBus.execute<SetNewPasswordCommand, void>(
          new SetNewPasswordCommand(dto),
@@ -82,7 +82,7 @@ export class AuthController {
 
    @Post('password-recovery')
    @HttpCode(HttpStatus.NO_CONTENT)
-   @UseGuards(ThrottlerGuard)
+   //@UseGuards(ThrottlerGuard)
    async passwordRecovery(
       @Body() dto: PasswordRecoveryInputDto,
    ): Promise<void> {
@@ -93,7 +93,8 @@ export class AuthController {
 
    @Post('login')
    @HttpCode(HttpStatus.OK)
-   @UseGuards(ThrottlerGuard, LocalAuthGuard)
+   @UseGuards(LocalAuthGuard)
+   //@UseGuards(ThrottlerGuard, LocalAuthGuard)
    async login(
       @ExtractUserFromRequest() user: UserContextDto,
       @Req() request: Request,

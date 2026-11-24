@@ -94,7 +94,12 @@ export class UsersQueryRepository {
       const sortColumn =
          query.sortBy === 'createdAt' ? 'created_at' : query.sortBy;
 
-      const orderBySql = 'ORDER BY ' + sortColumn + ' ' + query.sortDirection;
+      let sortExpression = sortColumn;
+      if (sortColumn === 'login') {
+         sortExpression = sortColumn + ' COLLATE "C"';
+      }
+      const orderBySql =
+         'ORDER BY ' + sortExpression + ' ' + query.sortDirection;
 
       const usersPageQueryText =
          'SELECT id, login, email, created_at FROM users WHERE ' +
