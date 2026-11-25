@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+/*import { InjectModel } from '@nestjs/mongoose';
 import { User } from '../../domain/user.entity';
-import type { UserModelType } from '../../domain/user.entity';
+import type { UserModelType } from '../../domain/user.entity';*/
 import { UserViewDto } from '../../api/view-dto/user.view-dto';
 import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../core/dto/paginated.view-dto';
@@ -11,8 +11,8 @@ import { isUUID } from 'class-validator';
 @Injectable()
 export class UsersQueryRepository {
    constructor(
-      @InjectModel(User.name)
-      private readonly UserModel: UserModelType,
+      /*@InjectModel(User.name)
+      private readonly UserModel: UserModelType,*/
       private readonly postgresService: PostgresService,
    ) {}
 
@@ -114,16 +114,12 @@ export class UsersQueryRepository {
          sqlValues,
       );
 
-      //console.log('Пользователи из PostgreSQL:', usersPageResponse.rows);
-
       const usersPageItems = usersPageResponse.rows.map((user) => ({
          id: user.id,
          login: user.login,
          email: user.email,
          createdAt: user.created_at.toISOString(),
       }));
-
-      //console.log('Пользователи для API:', usersPageItems);
 
       // ********************************************************************
 

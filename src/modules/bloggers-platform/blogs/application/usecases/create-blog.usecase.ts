@@ -23,8 +23,10 @@ export class CreateBlogUseCase implements ICommandHandler<
    async execute({ dto }: CreateBlogCommand): Promise<string> {
       const blog = this.BlogModel.createInstance(dto);
 
-      await this.blogsRepository.save(blog);
+      return this.blogsRepository.create(blog);
 
-      return blog._id.toString();
+      //await this.blogsRepository.save(blog);
+
+      //return blog._id.toString();
    }
 }
